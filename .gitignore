@@ -27,12 +27,14 @@ buildNumber.properties
 ##############################
 ## Gradle
 ##############################
-bin/
-build/
-.gradle
-.gradletasknamecache
-gradle-app.setting
+**/bin/
+**/build/
+**/.gradle
+**/.gradletasknamecache
+**/gradle-app.setting
 !gradle-wrapper.jar
+engine/.gradle
+
 
 ##############################
 ## IntelliJ
