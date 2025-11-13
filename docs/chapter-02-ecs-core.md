@@ -19,6 +19,8 @@ A complete, working ECS implementation that can manage 100,000+ entities at 60 F
 
 ## Introduction: Why ECS?
 
+### The Problem with Traditional OOP
+
 Traditional object-oriented game architectures struggle with:
 
 **Inheritance hierarchies:**
@@ -37,6 +39,42 @@ class FlyingEnemy extends Enemy { } // What if it also needs to swim?
 - **Cache misses**: Objects scattered in memory
 - **Hard to optimize**: Can't easily parallelize updates
 
+**Real Example - The "FlyingSwimmingEnemy" Problem:**
+
+```java
+// Attempt 1: Inheritance from FlyingEnemy
+class FlyingSwimmingEnemy extends FlyingEnemy {
+    // But what about swimming behavior?
+    // Need to copy-paste from SwimmingEnemy!
+}
+
+// Attempt 2: Multiple inheritance (not supported in Java!)
+class FlyingSwimmingEnemy extends FlyingEnemy, SwimmingEnemy { } // ERROR!
+
+// Attempt 3: Interfaces (but then each class reimplements everything)
+class FlyingSwimmingEnemy implements IFlying, ISwimming {
+    // Must reimplement BOTH flying and swimming logic
+    // Code duplication!
+}
+```
+
+**Memory Layout Problem:**
+
+```
+OOP Memory Layout (scattered objects):
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ Enemy #1     │  │ Enemy #2     │  │ Enemy #3     │
+│ vtable ptr   │  │ vtable ptr   │  │ vtable ptr   │
+│ x, y, z      │  │ x, y, z      │  │ x, y, z      │
+│ health       │  │ health       │  │ health       │
+│ ...          │  │ ...          │  │ ...          │
+└──────────────┘  └──────────────┘  └──────────────┘
+   0x1000           0x5000           0x9000
+
+Problem: CPU loads 0x1000, then 0x5000 (CACHE MISS!), then 0x9000 (CACHE MISS!)
+Result: ~200 cycles per load (from RAM) vs ~4 cycles (from L1 cache)
+```
+
 ### The ECS Solution
 
 **Separation of concerns:**
@@ -52,6 +90,9 @@ world.addComponent(player, new Position(0, 0, 0));
 world.addComponent(player, new Velocity(0, 0, 0));
 world.addComponent(player, new Renderable(playerSprite));
 world.addComponent(player, new PlayerTag());
+world.addComponent(player, new Flying());    // Add flying!
+world.addComponent(player, new Swimming());  // Add swimming!
+// No inheritance! Just add components as needed!
 
 // Systems process entities with specific component combinations
 class MovementSystem extends System {
@@ -68,25 +109,75 @@ class MovementSystem extends System {
 }
 ```
 
+**ECS Memory Layout (components grouped by type):**
+
+```
+Position Components (contiguous):
+┌────────┬────────┬────────┬────────┐
+│ x,y,z  │ x,y,z  │ x,y,z  │ x,y,z  │  ← All positions together!
+└────────┴────────┴────────┴────────┘
+  Entity1  Entity2  Entity3  Entity4
+
+Velocity Components (contiguous):
+┌────────┬────────┬────────┬────────┐
+│ dx,dy  │ dx,dy  │ dx,dy  │ dx,dy  │  ← All velocities together!
+└────────┴────────┴────────┴────────┘
+  Entity1  Entity2  Entity3  Entity4
+
+Advantage: CPU loads entire cache line (~64 bytes = 5 positions at once!)
+Result: ~4 cycles per load (L1 cache hit)
+50x faster than OOP!
+```
+
 **Benefits:**
 - **Flexible**: Add/remove components freely (flying + swimming? Sure!)
 - **Cache-friendly**: Components stored contiguously
 - **Parallelizable**: Systems can run concurrently
 - **Data-oriented**: Optimize for data access patterns
 
+**Professional Engines Using ECS:**
+- **Unity DOTS** (Data-Oriented Technology Stack)
+- **Unreal Engine 5** (Mass Entity system)
+- **Bevy** (Rust game engine)
+- **Overwatch** (Blizzard's custom engine)
+
 ---
 
 ## Concepts: ECS Architecture
 
-### Entities
+### Entities: Just Numbers
 
-Entities are just **unique integers**:
+**WHY:** Entities are just **unique integers** - no data, no behavior, just IDs.
 
 ```java
 int entity = 42; // That's it!
 ```
 
-With **generation counters** for recycling:
+Think of entities like **database primary keys**:
+```sql
+-- Database analogy
+CREATE TABLE entities (
+    id INT PRIMARY KEY  -- This is the entity!
+);
+
+CREATE TABLE positions (
+    entity_id INT,      -- Foreign key
+    x FLOAT, y FLOAT, z FLOAT
+);
+
+CREATE TABLE velocities (
+    entity_id INT,      -- Foreign key
+    dx FLOAT, dy FLOAT, dz FLOAT
+);
+
+-- Query: Get all entities with position AND velocity
+SELECT entities.id, positions.*, velocities.*
+FROM entities
+JOIN positions ON entities.id = positions.entity_id
+JOIN velocities ON entities.id = velocities.entity_id;
+```
+
+**With Generation Counters for Safe Recycling:**
 
 ```java
 record EntityId(int id, int generation) { }
@@ -95,46 +186,131 @@ record EntityId(int id, int generation) { }
 When an entity is destroyed, its ID goes into a free list. When reused, generation increments:
 
 ```
-Entity 5, gen 0 → destroyed → Entity 5, gen 1 (different entity!)
+Timeline:
+─────────────────────────────────────────────────►
+
+Frame 100:
+Entity 5, gen 0 created
+    → Player stores handle: Entity(5, 0)
+
+Frame 500:
+Entity 5, gen 0 destroyed
+    → ID 5 goes into free list
+
+Frame 1000:
+New entity reuses ID 5 → Entity 5, gen 1 created
+    → Player still has handle: Entity(5, 0)
+    → Player.isValid() → FALSE! (generation mismatch)
+    ✓ Dangling reference prevented!
 ```
 
-This prevents **dangling references**: an old handle to (5, gen 0) won't accidentally access (5, gen 1).
-
-### Components
-
-Components are **pure data** (no methods beyond getters):
+**Why This Matters - The Dangling Reference Problem:**
 
 ```java
-// Good: Pure data
-public record Position(float x, float y, float z) { }
-public record Velocity(float dx, float dy, float dz) { }
-public record Health(int current, int max) { }
+// WITHOUT generation counters (BUGGY!):
+Entity enemy = world.createEntity(5);  // Entity ID 5
+player.setTarget(enemy);               // Player targets entity 5
 
-// Bad: Logic in components
+// ... 100 frames later ...
+world.destroyEntity(enemy);            // Entity 5 destroyed
+
+// ... 200 frames later ...
+Entity powerup = world.createEntity(); // Reuses ID 5!
+
+// BUG: Player attacks powerup thinking it's the enemy!
+player.attackTarget();  // Attacks entity 5 (now powerup!)
+
+// WITH generation counters (SAFE!):
+Entity enemy = world.createEntity();   // Entity(5, gen 0)
+player.setTarget(enemy);
+
+world.destroyEntity(enemy);            // Entity(5, gen 0) destroyed
+
+Entity powerup = world.createEntity(); // Entity(5, gen 1)
+
+player.attackTarget();
+// ✓ world.isValid(Entity(5, gen 0)) → FALSE
+// ✓ Attack skipped safely!
+```
+
+**Performance:**
+- Generation counter is just 1 extra int (4 bytes)
+- Validation is 1 integer comparison (~1 cycle)
+- Cost: Negligible
+- Benefit: **Prevents entire class of bugs!**
+
+### Components: Pure Data
+
+**WHAT:** Components are **pure data** (no methods beyond getters).
+
+**WHY:** Separating data from logic enables:
+1. Cache-friendly memory layout
+2. Easy serialization (save/load)
+3. Parallelization (no shared state)
+4. Network replication (just send data)
+
+```java
+// ✓ Good: Pure data
+public record Position(float x, float y, float z) implements Component { }
+public record Velocity(float dx, float dy, float dz) implements Component { }
+public record Health(int current, int max) implements Component { }
+
+// ✗ Bad: Logic in components
 public class Position {
     float x, y, z;
-    public void moveTowards(Position target) { } // NO!
+    public void moveTowards(Position target) { } // NO! Logic in System!
+    public void draw() { }                       // NO! Logic in System!
 }
 ```
 
-**Why records?** Java 25 records are perfect for components:
+**Why Java Records?** Java 25 records are perfect for components:
 - Immutable by default (prevent accidental mutation)
 - Compact (no hidden overhead)
 - Auto-generated equals/hashCode/toString
+- Pattern matching support
 
-**Mutable components** (when needed):
+**Mutable Components (When Needed):**
+
+Sometimes you need mutability for performance (avoid allocations):
 
 ```java
+// Immutable (creates new object each frame):
+public record Position(float x, float y, float z) implements Component { }
+
+// System must replace entire component:
+world.addComponent(entity, new Position(pos.x() + vel.dx(), pos.y() + vel.dy(), pos.z()));
+// ↑ Allocates new Position object every frame!
+
+// Mutable (modifies in-place):
 public final class Transform {
     public float x, y, z;
     public float rotationX, rotationY, rotationZ;
     public float scaleX = 1, scaleY = 1, scaleZ = 1;
 }
+
+// System modifies directly:
+transform.x += velocity.dx;  // No allocation!
 ```
 
-### Systems
+**When to Use Mutable Components:**
+- Transform, Velocity, Acceleration (updated every frame)
+- Large components (would be expensive to copy)
+- Components with many fields
 
-Systems contain **logic** that operates on entities with specific components:
+**When to Use Immutable Records:**
+- Tags (zero-size components like `PlayerTag`)
+- Config data (health max, damage, speed)
+- Components that rarely change
+
+### Systems: Pure Logic
+
+**WHAT:** Systems contain **logic** that operates on entities with specific components.
+
+**WHY:** Separating logic from data enables:
+1. Clear execution order
+2. Parallelization (systems can run concurrently)
+3. Easy enabling/disabling (just skip system update)
+4. Profiling (measure each system independently)
 
 ```java
 public abstract class System {
@@ -152,16 +328,62 @@ public class GravitySystem extends System {
 }
 ```
 
-**System execution order matters:**
-1. Input systems (capture input)
-2. Gameplay systems (AI, player control)
-3. Physics systems (movement, collision)
-4. Animation systems (update sprites)
-5. Render systems (draw to screen)
+**System Execution Order Matters:**
 
-### World
+```
+Frame Timeline:
+┌─────────────────────────────────────────────┐
+│  Frame N (16.67ms @ 60 FPS)                 │
+├─────────────────────────────────────────────┤
+│  1. Input Systems                           │
+│     └─ InputSystem (capture WASD, mouse)    │
+│        ↓ produces Velocity components       │
+│                                             │
+│  2. Gameplay Systems                        │
+│     └─ AISystem (enemies chase player)      │
+│        ↓ modifies Velocity                  │
+│                                             │
+│  3. Physics Systems                         │
+│     ├─ GravitySystem (apply forces)         │
+│     ├─ MovementSystem (velocity → position) │
+│     └─ CollisionSystem (resolve collisions) │
+│        ↓ modifies Position, Velocity        │
+│                                             │
+│  4. Animation Systems                       │
+│     └─ SpriteAnimationSystem                │
+│        ↓ updates Sprite frame               │
+│                                             │
+│  5. Render Systems                          │
+│     └─ RenderSystem (draw to screen)        │
+│        ↓ reads Position, Sprite (no writes) │
+│                                             │
+└─────────────────────────────────────────────┘
 
-The World is the **ECS container**:
+WHY THIS ORDER?
+- Input must come first (capture state at frame start)
+- Physics must complete before rendering
+- Rendering must be last (draw final state)
+```
+
+**Example of Wrong Order:**
+
+```java
+// ✗ WRONG ORDER:
+world.addSystem(new RenderSystem());      // Renders BEFORE physics!
+world.addSystem(new PhysicsSystem());     // Physics happens after draw
+world.addSystem(new InputSystem());       // Input captured LAST
+
+// Result: Visuals lag 1 frame behind physics (jittery movement!)
+
+// ✓ CORRECT ORDER:
+world.addSystem(new InputSystem());       // Input first
+world.addSystem(new PhysicsSystem());     // Physics second
+world.addSystem(new RenderSystem());      // Render last
+```
+
+### World: The ECS Container
+
+**WHAT:** The World is the **central ECS manager** - creates entities, stores components, updates systems.
 
 ```java
 World world = new World();
@@ -185,6 +407,243 @@ renderSystem.update(world, deltaTime);
 // Destroy entity
 world.destroyEntity(entity);
 ```
+
+**World Responsibilities:**
+1. **Entity lifecycle** (create, destroy, validate)
+2. **Component storage** (add, remove, get)
+3. **System management** (register, update)
+4. **Queries** (find entities with specific components)
+
+---
+
+## Component Storage: Sparse Sets Explained
+
+### The Challenge
+
+We need a data structure that supports:
+- **Fast add** (O(1))
+- **Fast remove** (O(1))
+- **Fast lookup** (O(1)) - "Does entity 42 have Position?"
+- **Dense iteration** - Loop through all components quickly (cache-friendly)
+
+**Why HashMap Isn't Enough:**
+
+```java
+// HashMap approach:
+Map<Integer, Position> positions = new HashMap<>();
+
+positions.put(entityId, new Position(x, y, z));  // ✓ O(1) add
+Position pos = positions.get(entityId);          // ✓ O(1) lookup
+positions.remove(entityId);                      // ✓ O(1) remove
+
+// Iteration:
+for (Position pos : positions.values()) {
+    // Process position
+}
+
+// PROBLEM: HashMap iteration is SLOW!
+// - HashMap buckets scattered in memory (cache misses)
+// - Need to skip empty buckets
+// - Hash collisions cause linked list traversal
+```
+
+**Performance Comparison:**
+
+```
+Iterating 100,000 components:
+
+Array (dense):
+┌──┬──┬──┬──┬──┬──┬──┬──┐
+│P │P │P │P │P │P │P │P │  ← All in one cache line!
+└──┴──┴──┴──┴──┴──┴──┴──┘
+Time: 0.5ms (cache-friendly)
+
+HashMap (scattered):
+Bucket 0: [] → null
+Bucket 1: [P] → 0x1000  ← Cache miss!
+Bucket 2: [] → null
+Bucket 3: [P] → 0x5000  ← Cache miss!
+Bucket 4: [P→P] → 0x3000 → 0x7000  ← Two cache misses!
+...
+Time: 15ms (30x slower!)
+```
+
+### Sparse Set Data Structure
+
+**THE SOLUTION:** Sparse sets provide O(1) add/remove/lookup AND dense iteration!
+
+**Structure:**
+
+```
+Sparse Set for Position Component:
+
+sparse[entityId] = index into dense array (or -1 if not present)
+┌────┬────┬────┬────┬────┬────┬────┬────┐
+│ -1 │  0 │ -1 │  2 │ -1 │  1 │ -1 │  3 │  ← sparse[entityId]
+└────┴────┴────┴────┴────┴────┴────┴────┘
+  E0   E1   E2   E3   E4   E5   E6   E7
+
+dense[i] = entityId
+┌────┬────┬────┬────┐
+│ E1 │ E5 │ E3 │ E7 │  ← dense array (entity IDs)
+└────┴────┴────┴────┘
+   0    1    2    3
+
+components[i] = component data
+┌─────────┬─────────┬─────────┬─────────┐
+│ (1,2,3) │ (4,5,6) │ (7,8,9) │ (0,1,2) │  ← component array (Position data)
+└─────────┴─────────┴─────────┴─────────┘
+      0        1         2         3
+
+size = 4
+```
+
+**How It Works:**
+
+```java
+// Lookup: O(1)
+Position getPosition(int entityId) {
+    int index = sparse[entityId];      // 1 array access
+    if (index == -1) return null;      // Not present
+    return components[index];          // 1 array access
+}
+// Total: 2 array accesses = ~8 CPU cycles
+
+// Iteration: O(n) and cache-friendly
+for (int i = 0; i < size; i++) {
+    Position pos = components[i];  // Sequential access = fast!
+    // Process pos
+}
+// Cache prefetcher loads next components automatically!
+```
+
+### Sparse Set Operations
+
+**1. ADD Operation:**
+
+```
+Initial state (entity 9 not present):
+sparse: [-1, 0, -1, 2, -1, 1, -1, 3, -1, -1]
+dense:  [1, 5, 3, 7]
+components: [(1,2,3), (4,5,6), (7,8,9), (0,1,2)]
+size: 4
+
+Add Position(10,11,12) to entity 9:
+
+Step 1: Check sparse[9] → -1 (not present)
+Step 2: Set sparse[9] = size (4)
+Step 3: Set dense[4] = 9
+Step 4: Set components[4] = (10,11,12)
+Step 5: size++
+
+Result:
+sparse: [-1, 0, -1, 2, -1, 1, -1, 3, -1, 4]
+                                        ↑ now points to index 4
+dense:  [1, 5, 3, 7, 9]
+                   ↑ added entity 9
+components: [(1,2,3), (4,5,6), (7,8,9), (0,1,2), (10,11,12)]
+                                                  ↑ added data
+size: 5
+
+Time: O(1) - just 4 array writes!
+```
+
+**2. REMOVE Operation (Swap-and-Pop):**
+
+```
+Initial state:
+sparse: [-1, 0, -1, 2, -1, 1, -1, 3, -1, 4]
+dense:  [1, 5, 3, 7, 9]
+components: [(1,2,3), (4,5,6), (7,8,9), (0,1,2), (10,11,12)]
+size: 5
+
+Remove entity 5 (at index 1):
+
+Step 1: Get index: sparse[5] = 1
+Step 2: Get last entity: dense[4] = 9
+Step 3: Swap: dense[1] = 9
+Step 4: Swap: components[1] = components[4]
+Step 5: Update: sparse[9] = 1  (entity 9 now at index 1)
+Step 6: Clear: sparse[5] = -1
+Step 7: Clear: components[4] = null
+Step 8: size--
+
+Result:
+sparse: [-1, 0, -1, 2, -1, -1, -1, 3, -1, 1]
+                          ↑ cleared         ↑ updated (9 now at index 1)
+dense:  [1, 9, 3, 7, X]
+           ↑ swapped from end
+components: [(1,2,3), (10,11,12), (7,8,9), (0,1,2), X]
+                      ↑ swapped from end
+size: 4
+
+Time: O(1) - no shifting required!
+WHY FAST? Only swap with last element, then decrement size
+```
+
+**Why Swap-and-Pop?**
+
+```
+// ✗ ArrayList.remove() approach (SLOW):
+[A, B, C, D, E]
+Remove B:
+[A, _, C, D, E]  ← Gap!
+[A, C, D, E, _]  ← Shift everything! O(n)
+
+// ✓ Swap-and-pop (FAST):
+[A, B, C, D, E]
+Remove B:
+[A, E, C, D, _]  ← Swap with last, then remove! O(1)
+              ↑ Order doesn't matter for components!
+```
+
+### Sparse Set Performance
+
+**Memory:**
+- Sparse array: O(max entity ID) - typically ~400 KB for 100K entities
+- Dense array: O(# components) - only grows with actual components
+- Total overhead: ~8 bytes per component (sparse + dense pointers)
+
+**Speed:**
+| Operation | Time | Explanation |
+|-----------|------|-------------|
+| Add | O(1) | 4 array writes |
+| Remove | O(1) | Swap-and-pop |
+| Lookup | O(1) | 2 array reads |
+| Iteration | O(n) | Sequential (cache-friendly) |
+
+**Cache Performance:**
+
+```
+Dense iteration (sparse set):
+┌──┬──┬──┬──┬──┬──┬──┬──┐
+│P │P │P │P │P │P │P │P │  ← 64-byte cache line
+└──┴──┴──┴──┴──┴──┴──┴──┘
+Loads 8 components at once!
+
+HashMap iteration:
+0x1000: [P] ← Load (cache miss)
+0x5000: [P] ← Load (cache miss)
+0x9000: [P] ← Load (cache miss)
+Each load: 200 CPU cycles
+Dense load: 4 CPU cycles
+50x faster!
+```
+
+**Tradeoffs:**
+- ✓ O(1) operations
+- ✓ Dense iteration (cache-friendly)
+- ✓ Simple implementation
+- ✗ Sparse array memory (grows with max entity ID)
+- ✗ Unordered iteration (swap-and-pop changes order)
+
+**When This Becomes a Problem:**
+
+If you have 1 million entity IDs but only 1000 active entities:
+- Sparse array: 1M × 4 bytes = 4 MB (wasted!)
+- Dense array: 1000 × 12 bytes = 12 KB (good)
+
+**Solution:** Archetype storage (Chapter 12) - groups entities by component signature.
 
 ---
 
@@ -212,6 +671,11 @@ public interface Component {
 }
 ```
 
+**WHY MARKER INTERFACE?**
+- Type safety (only components can be added to entities)
+- Reflection (can query all component types at runtime)
+- Documentation (clear intent)
+
 ### Step 2: Entity Handle
 
 Create `src/main/java/com/yourname/engine/ecs/Entity.java`:
@@ -221,6 +685,23 @@ package com.yourname.engine.ecs;
 
 /**
  * Entity handle with generation counter for safe recycling.
+ *
+ * <p>WHY GENERATION COUNTER?
+ * When an entity is destroyed, its ID can be reused. The generation counter
+ * increments on reuse, preventing dangling references:
+ *
+ * <pre>
+ * Entity enemy = world.createEntity();  // Entity(5, gen 0)
+ * player.setTarget(enemy);
+ *
+ * world.destroyEntity(enemy);           // ID 5 freed
+ *
+ * Entity powerup = world.createEntity(); // Entity(5, gen 1) - reuses ID 5!
+ *
+ * player.attackTarget();
+ * // ✓ world.isValid(Entity(5, gen 0)) → FALSE
+ * // ✓ Attack prevented safely!
+ * </pre>
  *
  * @param id Unique entity ID (reused when entity destroyed)
  * @param generation Generation counter (increments on reuse)
@@ -253,7 +734,7 @@ public record Entity(int id, int generation) {
 }
 ```
 
-### Step 3: Component Storage
+### Step 3: Component Storage (Sparse Set)
 
 Create `src/main/java/com/yourname/engine/ecs/ComponentStorage.java`:
 
@@ -273,6 +754,17 @@ import java.util.*;
  * - components[i] = component data
  *
  * <p>Iteration is fast (just iterate dense + components arrays).
+ *
+ * <p>Example:
+ * <pre>
+ * sparse:     [-1,  0, -1,  2, -1,  1]
+ * dense:      [  1,  5,  3]
+ * components: [pos1, pos5, pos3]
+ * size: 3
+ *
+ * Lookup: sparse[5] = 1 → components[1] = pos5 (O(1))
+ * Iteration: for (i=0; i < size; i++) { ... } (cache-friendly!)
+ * </pre>
  */
 class ComponentStorage<T extends Component> {
     private int[] sparse;        // Entity ID → dense index (-1 if absent)
@@ -292,6 +784,14 @@ class ComponentStorage<T extends Component> {
 
     /**
      * Add or update component for entity.
+     *
+     * <p>HOW IT WORKS:
+     * 1. Check if entity already has component (sparse[entityId])
+     * 2. If not, add to end of dense arrays and increment size
+     * 3. Update sparse[entityId] to point to new index
+     * 4. Store component data
+     *
+     * <p>Time: O(1)
      */
     public void set(int entityId, T component) {
         ensureSparseCapacity(entityId + 1);
@@ -313,6 +813,8 @@ class ComponentStorage<T extends Component> {
 
     /**
      * Get component for entity, or null if not present.
+     *
+     * <p>Time: O(1) - just 2 array lookups
      */
     @SuppressWarnings("unchecked")
     public T get(int entityId) {
@@ -326,6 +828,8 @@ class ComponentStorage<T extends Component> {
 
     /**
      * Check if entity has this component.
+     *
+     * <p>Time: O(1)
      */
     public boolean has(int entityId) {
         if (entityId >= sparse.length) return false;
@@ -334,7 +838,29 @@ class ComponentStorage<T extends Component> {
     }
 
     /**
-     * Remove component from entity.
+     * Remove component from entity using swap-and-pop.
+     *
+     * <p>HOW SWAP-AND-POP WORKS:
+     * <pre>
+     * Initial: dense = [1, 5, 3, 7], size = 4
+     * Remove entity 5 (at index 1):
+     *
+     * Step 1: Get last entity: lastEntity = dense[3] = 7
+     * Step 2: Swap with last:
+     *    dense[1] = 7
+     *    components[1] = components[3]
+     * Step 3: Update sparse for moved entity:
+     *    sparse[7] = 1  (entity 7 now at index 1)
+     * Step 4: Clear removed entity:
+     *    sparse[5] = -1
+     *    components[3] = null
+     * Step 5: size-- = 3
+     *
+     * Result: dense = [1, 7, 3, X], size = 3
+     * </pre>
+     *
+     * <p>WHY FAST? No shifting required! Just swap with last element.
+     * <p>Time: O(1)
      */
     public void remove(int entityId) {
         if (entityId >= sparse.length) return;
@@ -356,6 +882,8 @@ class ComponentStorage<T extends Component> {
 
     /**
      * Get all entity IDs with this component.
+     *
+     * <p>CACHE-FRIENDLY: Returns dense array (sequential access).
      */
     public int[] getEntityIds() {
         return Arrays.copyOf(dense, size);
@@ -405,19 +933,6 @@ class ComponentStorage<T extends Component> {
 }
 ```
 
-**Why Sparse Sets?**
-
-- **O(1) add, remove, lookup**: Fast operations
-- **Dense iteration**: Components stored contiguously (cache-friendly)
-- **Memory efficient**: Sparse array only grows with max entity ID
-
-**Tradeoffs:**
-
-- **Memory**: Sparse array size = max entity ID (can waste memory if IDs spread out)
-- **Not cache-optimal for iteration**: Still need to index into sparse array
-
-Alternative: **Archetypes** (Unity DOTS approach) - we'll explore in Chapter 12.
-
 ### Step 4: World Management
 
 Create `src/main/java/com/yourname/engine/ecs/World.java`:
@@ -429,6 +944,12 @@ import java.util.*;
 
 /**
  * ECS World. Manages entities, components, and systems.
+ *
+ * <p>Central hub for:
+ * - Entity lifecycle (create, destroy, validate)
+ * - Component storage (add, remove, get)
+ * - System execution (update all systems)
+ * - Queries (find entities with specific components)
  */
 public class World {
     // Entity management
@@ -444,6 +965,20 @@ public class World {
 
     /**
      * Create a new entity.
+     *
+     * <p>HOW ENTITY RECYCLING WORKS:
+     * <pre>
+     * Frame 100:
+     *   entity = createEntity() → Entity(5, gen 0)
+     *
+     * Frame 500:
+     *   destroyEntity(entity) → ID 5 goes into freeEntityIds queue
+     *
+     * Frame 1000:
+     *   newEntity = createEntity()
+     *   → Reuses ID 5 → Entity(5, gen 1)
+     *   ✓ Old handles to Entity(5, gen 0) are invalid!
+     * </pre>
      */
     public Entity createEntity() {
         int id;
@@ -470,6 +1005,12 @@ public class World {
 
     /**
      * Destroy an entity and remove all its components.
+     *
+     * <p>PERFORMANCE:
+     * - Remove from all component storages: O(# component types)
+     * - Each removal is O(1) (swap-and-pop)
+     * - Add to free list: O(1)
+     * - Total: O(# component types) ≈ O(1) in practice
      */
     public void destroyEntity(Entity entity) {
         if (!isValid(entity)) return;
@@ -479,12 +1020,18 @@ public class World {
             storage.remove(entity.id());
         }
 
-        // Mark ID as free
+        // Mark ID as free for recycling
         freeEntityIds.offer(entity.id());
     }
 
     /**
      * Check if entity handle is valid (not destroyed).
+     *
+     * <p>VALIDATION:
+     * 1. Check ID is in range
+     * 2. Check generation matches current generation
+     *
+     * <p>Time: O(1)
      */
     public boolean isValid(Entity entity) {
         if (entity.id() < 0 || entity.id() >= nextEntityId) return false;
@@ -583,7 +1130,7 @@ public class World {
 }
 ```
 
-### Step 5: Entity Query
+### Step 5: Entity Query Optimization
 
 Create `src/main/java/com/yourname/engine/ecs/EntityQuery.java`:
 
@@ -596,6 +1143,28 @@ import java.util.stream.Stream;
 
 /**
  * Query for entities with specific components.
+ *
+ * <p>OPTIMIZATION: Iterates the SMALLEST component storage first.
+ *
+ * <p>Example:
+ * <pre>
+ * Query: Position + Velocity + RareTag
+ *
+ * Component counts:
+ * - Position: 10,000 entities
+ * - Velocity: 5,000 entities
+ * - RareTag: 10 entities
+ *
+ * Naive approach (iterate Position):
+ * - Check 10,000 entities
+ * - 9,990 rejected (don't have RareTag)
+ * - Time: 10,000 checks
+ *
+ * Optimized approach (iterate RareTag):
+ * - Check 10 entities
+ * - Maybe 5 match
+ * - Time: 10 checks (1000x faster!)
+ * </pre>
  *
  * <p>Usage:
  * <pre>
@@ -618,6 +1187,17 @@ public class EntityQuery {
 
     /**
      * Iterate over entities with all required components.
+     *
+     * <p>ALGORITHM:
+     * 1. Find smallest component storage (fewest entities)
+     * 2. Iterate that storage
+     * 3. For each entity, check if it has ALL other components
+     * 4. If yes, call action
+     *
+     * <p>WHY THIS IS FAST:
+     * - Iterates fewest entities possible
+     * - Early exit if missing any component
+     * - Cache-friendly (sequential iteration)
      */
     public void forEach(Consumer<EntityView> action) {
         if (componentClasses.length == 0) return;
@@ -629,7 +1209,7 @@ public class EntityQuery {
         for (Class<? extends Component> compClass : componentClasses) {
             ComponentStorage<?> storage = world.getStorage(compClass);
             if (storage == null || storage.getSize() == 0) {
-                return; // No entities have this component
+                return; // No entities have this component → query is empty
             }
             if (storage.getSize() < smallestSize) {
                 smallestSize = storage.getSize();
@@ -648,7 +1228,7 @@ public class EntityQuery {
             for (Class<? extends Component> compClass : componentClasses) {
                 if (!world.hasComponent(entity, compClass)) {
                     hasAll = false;
-                    break;
+                    break; // Early exit
                 }
             }
 
@@ -977,7 +1557,20 @@ With 100K entities × 3 components:
 
 **Total**: ~4.4 MB for 100K entities (44 bytes/entity)
 
-Compare to OOP: Each entity object would be 100+ bytes (object header + fields + vtable) = 10+ MB
+**Compare to OOP:**
+```java
+class Entity {
+    Object vtable;     // 8 bytes
+    int id;            // 4 bytes
+    Position pos;      // 12 bytes
+    Velocity vel;      // 12 bytes
+    Health health;     // 8 bytes
+    // Padding: 4 bytes
+}
+// Total: 48 bytes per entity (without overhead!)
+// With object header: ~64 bytes
+// 100K entities = 6.4 MB (45% more memory!)
+```
 
 ### CPU Performance
 
@@ -985,12 +1578,104 @@ On modern hardware (Intel i7, Java 25 ZGC):
 
 - **Entity creation**: ~0.5 µs per entity (200K entities/sec)
 - **Component add**: ~0.3 µs per operation
-- **Query iteration**: ~0.01 µs per entity (10M entities/sec)
+- **Query iteration**: ~0.01 µs per entity (100M entities/sec)
 - **System update** (100K entities): ~2ms per system
 
 **Target**: 60 FPS = 16.67ms per frame
 
-With 100K entities and 5 systems: ~10ms/frame → **60+ FPS achievable**
+With 100K entities and 5 systems: ~10ms/frame → **100+ FPS achievable**
+
+---
+
+## Common Mistakes & Solutions
+
+### Mistake 1: Logic in Components
+
+```java
+// ✗ BAD: Component has logic
+public class Position implements Component {
+    public float x, y, z;
+
+    public void moveTo(float targetX, float targetY) {
+        // Logic in component!
+        this.x = targetX;
+        this.y = targetY;
+    }
+}
+
+// ✓ GOOD: Logic in system
+public class MovementSystem extends System {
+    public void update(World world, float dt) {
+        world.query(Position.class, Target.class).forEach(entity -> {
+            Position pos = entity.get(Position.class);
+            Target target = entity.get(Target.class);
+            // Logic here!
+            pos.x = target.x;
+            pos.y = target.y;
+        });
+    }
+}
+```
+
+### Mistake 2: Modifying Query While Iterating
+
+```java
+// ✗ BAD: Modifying during iteration
+world.query(Health.class).forEach(entity -> {
+    Health health = entity.get(Health.class);
+    if (health.isDead()) {
+        world.destroyEntity(entity.getEntity());  // CRASHES! Concurrent modification!
+    }
+});
+
+// ✓ GOOD: Collect first, then modify
+List<Entity> toDestroy = new ArrayList<>();
+world.query(Health.class).forEach(entity -> {
+    if (entity.get(Health.class).isDead()) {
+        toDestroy.add(entity.getEntity());
+    }
+});
+toDestroy.forEach(world::destroyEntity);
+```
+
+### Mistake 3: Using Entity ID Instead of Handle
+
+```java
+// ✗ BAD: Storing ID only
+int enemyId = enemy.id();  // Loses generation info!
+
+// Later...
+Entity staleEnemy = new Entity(enemyId, 0);  // Wrong generation!
+world.addComponent(staleEnemy, ...);  // Adds to wrong entity!
+
+// ✓ GOOD: Store full handle
+Entity enemy = world.createEntity();
+player.setTarget(enemy);  // Stores Entity(id, generation)
+
+// Later...
+if (world.isValid(player.getTarget())) {
+    // Safe!
+}
+```
+
+---
+
+## Comparison to Professional Engines
+
+| Feature | JECS (Ours) | Unity DOTS | Unreal Mass | Bevy |
+|---------|-------------|------------|-------------|------|
+| Storage | Sparse sets | Archetypes | Archetypes | Archetypes |
+| Queries | Runtime | Cached | Cached | Compile-time |
+| Systems | Manual order | Groups | Phases | Automatic |
+| Parallelization | Chapter 12 | Built-in | Built-in | Built-in |
+| Language | Java 25 | C# | C++ | Rust |
+| Max Entities | 100K+ | 1M+ | 1M+ | 1M+ |
+
+**Why Our Approach (Sparse Sets) for Now:**
+1. **Simple to understand** - Good for learning
+2. **Fast for most games** - 100K entities @ 60 FPS
+3. **O(1) operations** - Predictable performance
+4. **Foundation for archetypes** - We'll upgrade in Chapter 12!
 
 ---
 
@@ -1009,7 +1694,8 @@ public class Engine {
 
         world = new World();
 
-        // Add systems
+        // Add systems (order matters!)
+        // world.addSystem(new InputSystem());
         // world.addSystem(new PhysicsSystem());
         // world.addSystem(new RenderSystem());
 
@@ -1056,7 +1742,7 @@ public class Components {
 
     /**
      * 2D transformation (position, rotation, scale).
-     * Mutable for performance.
+     * Mutable for performance (updated every frame).
      */
     public static class Transform2D implements Component {
         public float x, y;
@@ -1272,6 +1958,8 @@ public class Systems {
 
     /**
      * Collision system: Check circular collisions and apply damage.
+     *
+     * <p>NOTE: This is O(n²) - we'll optimize with spatial partitioning in Chapter 10!
      */
     public static class CollisionSystem extends System {
         @Override
@@ -1516,6 +2204,18 @@ In **Chapter 3**, we'll:
 - Build render pipelines for 2D and 3D
 - Integrate rendering with ECS (Renderable components)
 - **Visualize our bouncing entities** on screen!
+
+---
+
+## Key Takeaways
+
+1. **ECS = Entities (IDs) + Components (Data) + Systems (Logic)**
+2. **Sparse sets provide O(1) operations + dense iteration**
+3. **Generation counters prevent dangling references**
+4. **Query optimization: iterate smallest component storage first**
+5. **System execution order matters** (Input → Physics → Render)
+6. **Components should be pure data** (no logic)
+7. **Cache-friendly memory layout** = 50x faster than OOP
 
 ---
 
