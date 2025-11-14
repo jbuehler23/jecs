@@ -1,6 +1,6 @@
-package com.jecs;
+package com.jecs.demos.rainbow;
 
-import com.jecs.util.IO;
+import com.jecs.core.util.IO;
 import org.joml.Vector3f;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;

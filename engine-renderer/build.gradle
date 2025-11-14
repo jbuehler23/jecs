@@ -1,0 +1,49 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'com.jecs'
+version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    lwjglVersion = '3.3.4'
+
+    lwjglNatives = System.getProperty('os.name').toLowerCase().with {
+        if (it.contains('windows')) return 'natives-windows'
+        if (it.contains('linux')) return 'natives-linux'
+        if (it.contains('mac')) {
+            return System.getProperty('os.arch').contains('aarch64')
+                    ? 'natives-macos-arm64'
+                    : 'natives-macos'
+        }
+        throw new IllegalStateException("Unsupported platform: ${it}")
+    }
+}
+
+dependencies {
+    // Depend on engine-core
+    api project(':engine-core')
+
+    // LWJGL BOM
+    api platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    // Vulkan bindings (exposed to consumers)
+    api 'org.lwjgl:lwjgl-vulkan'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.test {
+    useJUnitPlatform()
+}

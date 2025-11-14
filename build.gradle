@@ -1,0 +1,42 @@
+// Root build file for JECS multi-module project
+
+plugins {
+    id 'java'
+}
+
+group = 'com.jecs'
+version = '1.0-SNAPSHOT'
+
+// Common configuration for all subprojects
+subprojects {
+    repositories {
+        mavenCentral()
+    }
+
+    // Apply Java plugin to all subprojects
+    apply plugin: 'java'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    // Common test configuration
+    tasks.withType(Test) {
+        useJUnitPlatform()
+    }
+}
+
+// Task to build all modules
+task buildAll {
+    dependsOn subprojects*.build
+    group = 'build'
+    description = 'Build all engine modules and demos'
+}
+
+// Task to clean all modules
+task cleanAll {
+    dependsOn subprojects*.clean
+    group = 'build'
+    description = 'Clean all engine modules and demos'
+}

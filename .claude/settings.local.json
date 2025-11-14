@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(./gradlew clean build:*)",
+      "WebFetch(domain:vulkan-tutorial.com)"
     ],
     "deny": [],
     "ask": []
