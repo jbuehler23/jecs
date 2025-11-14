@@ -86,3 +86,4 @@ nb-configuration.xml
 .DS_Store
 /.gradle/*
 /build/
+/.idea/

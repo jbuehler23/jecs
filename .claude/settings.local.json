@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "Bash(./gradlew clean build:*)",
-      "WebFetch(domain:vulkan-tutorial.com)"
+      "WebFetch(domain:vulkan-tutorial.com)",
+      "Bash(./gradlew :engine-ecs:test:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
