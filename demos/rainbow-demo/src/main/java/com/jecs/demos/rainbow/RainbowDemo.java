@@ -91,8 +91,8 @@ public class RainbowDemo implements Application {
         VkCommandBuffer commandBuffer = vulkan.getCurrentCommandBuffer();
         recordCommandBuffer(commandBuffer, imageIndex);
 
-        // Submit command buffer
-        vulkan.submitCommandBuffer(commandBuffer);
+        // Submit command buffer with image index for proper semaphore synchronization
+        vulkan.submitCommandBuffer(commandBuffer, imageIndex);
 
         // End frame and present
         if (vulkan.endFrame(imageIndex)) {

@@ -5,7 +5,9 @@
       "Bash(./gradlew clean build:*)",
       "WebFetch(domain:vulkan-tutorial.com)",
       "Bash(./gradlew :engine-ecs:test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

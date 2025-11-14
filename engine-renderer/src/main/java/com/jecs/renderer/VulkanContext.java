@@ -572,10 +572,16 @@ public class VulkanContext {
 
     /**
      * Create synchronization objects.
+     *
+     * Uses a hybrid approach:
+     * - Per-frame imageAvailable semaphores (signaled by vkAcquireNextImageKHR)
+     * - Per-image renderFinished semaphores (to avoid reuse until image is done presenting)
+     * - Per-frame fences for CPU-GPU synchronization
      */
     private void createSyncObjects() {
+        int imageCount = swapChainImages.size();
         imageAvailableSemaphores = new ArrayList<>(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores = new ArrayList<>(MAX_FRAMES_IN_FLIGHT);
+        renderFinishedSemaphores = new ArrayList<>(imageCount);
         inFlightFences = new ArrayList<>(MAX_FRAMES_IN_FLIGHT);
 
         try (MemoryStack stack = stackPush()) {
@@ -586,23 +592,33 @@ public class VulkanContext {
             fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
             fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
-            LongBuffer pImageAvailableSemaphore = stack.mallocLong(1);
-            LongBuffer pRenderFinishedSemaphore = stack.mallocLong(1);
+            LongBuffer pSemaphore = stack.mallocLong(1);
             LongBuffer pFence = stack.mallocLong(1);
 
+            // Create per-frame imageAvailable semaphores and fences
             for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-                if (vkCreateSemaphore(device, semaphoreInfo, null, pImageAvailableSemaphore) != VK_SUCCESS ||
-                    vkCreateSemaphore(device, semaphoreInfo, null, pRenderFinishedSemaphore) != VK_SUCCESS ||
-                    vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
-                    throw new RuntimeException("Failed to create synchronization objects");
+                if (vkCreateSemaphore(device, semaphoreInfo, null, pSemaphore) != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to create image available semaphore");
                 }
+                imageAvailableSemaphores.add(pSemaphore.get(0));
 
-                imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
-                renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
+                if (vkCreateFence(device, fenceInfo, null, pFence) != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to create fence");
+                }
                 inFlightFences.add(pFence.get(0));
             }
 
-            System.out.println("✓ Synchronization objects created");
+            // Create per-image renderFinished semaphores
+            for (int i = 0; i < imageCount; i++) {
+                if (vkCreateSemaphore(device, semaphoreInfo, null, pSemaphore) != VK_SUCCESS) {
+                    throw new RuntimeException("Failed to create render finished semaphore");
+                }
+                renderFinishedSemaphores.add(pSemaphore.get(0));
+            }
+
+            System.out.println("✓ Synchronization objects created (" + MAX_FRAMES_IN_FLIGHT +
+                " frame semaphores, " + imageCount + " image semaphores, " +
+                MAX_FRAMES_IN_FLIGHT + " fences)");
         }
     }
 
@@ -613,9 +629,11 @@ public class VulkanContext {
      */
     public int beginFrame() {
         try (MemoryStack stack = stackPush()) {
+            // Wait for previous frame to finish (CPU-GPU sync)
             vkWaitForFences(device, inFlightFences.get(currentFrame), true, Long.MAX_VALUE);
 
             IntBuffer pImageIndex = stack.mallocInt(1);
+            // Acquire next image, signaling imageAvailable semaphore when ready
             int result = vkAcquireNextImageKHR(device, swapChain, Long.MAX_VALUE,
                 imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
@@ -626,6 +644,7 @@ public class VulkanContext {
                 throw new RuntimeException("Failed to acquire swap chain image");
             }
 
+            // Reset fence for this frame (will be signaled by vkQueueSubmit)
             vkResetFences(device, inFlightFences.get(currentFrame));
 
             return pImageIndex.get(0);
@@ -636,13 +655,14 @@ public class VulkanContext {
      * Submit command buffer for rendering.
      *
      * @param commandBuffer command buffer to submit
+     * @param imageIndex the swap chain image index being rendered to
      */
-    public void submitCommandBuffer(VkCommandBuffer commandBuffer) {
+    public void submitCommandBuffer(VkCommandBuffer commandBuffer, int imageIndex) {
         try (MemoryStack stack = stackPush()) {
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
-            // Wait for image to be available before writing colors
+            // Wait for image to be available before writing colors (per-frame semaphore)
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)));
             submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
@@ -650,10 +670,10 @@ public class VulkanContext {
             // Command buffers to execute
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer));
 
-            // Signal when rendering is finished
-            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
+            // Signal when rendering is finished (per-IMAGE semaphore to avoid reuse)
+            submitInfo.pSignalSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
 
-            // Submit to graphics queue
+            // Submit to graphics queue with per-frame fence (CPU-GPU sync)
             if (vkQueueSubmit(graphicsQueue, submitInfo, inFlightFences.get(currentFrame)) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to submit command buffer");
             }
@@ -670,7 +690,8 @@ public class VulkanContext {
         try (MemoryStack stack = stackPush()) {
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-            presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(currentFrame)));
+            // Wait for this specific image's render to finish (per-image semaphore)
+            presentInfo.pWaitSemaphores(stack.longs(renderFinishedSemaphores.get(imageIndex)));
             presentInfo.swapchainCount(1);
             presentInfo.pSwapchains(stack.longs(swapChain));
             presentInfo.pImageIndices(stack.ints(imageIndex));
