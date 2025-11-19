@@ -1,6 +1,7 @@
 package com.jecs.engine;
 
 import com.jecs.renderer.Shader;
+import com.jecs.util.Time;
 import org.joml.Vector2f;
 import org.lwjgl.BufferUtils;
 
@@ -90,6 +91,7 @@ public class LevelEditorScene extends Scene {
         defaultShader.use();
         defaultShader.uploadMat4f("uProjection", camera.getProjectionMatrix());
         defaultShader.uploadMat4f("uView", camera.getViewMatrix());
+        defaultShader.uploadFloat("uTime", Time.getTime());
         // Bind the VAO we're using
         glBindVertexArray(vaoID);
         // Enable the vertex attribute pointers
