@@ -8,7 +8,9 @@
       "Bash(find:*)",
       "Bash(./gradlew build:*)",
       "Bash(./gradlew:*)",
-      "WebFetch(domain:vkguide.dev)"
+      "WebFetch(domain:vkguide.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

@@ -11,19 +11,20 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
-    private int width, height;
-    private String title;
+    private final int width;
+    private final int height;
+    private final String title;
     private long glfwWindow;
     public float r, g, b, a;
-    private boolean fadeToBlack = false;
+    private final boolean fadeToBlack = false;
 
     private static Window window = null;
 
     private static Scene currentScene;
 
     private Window() {
-        this.width = 800;
-        this.height = 600;
+        this.width = 1920;
+        this.height = 1080;
         this.title = "Demo";
         this.r = 1.0f;
         this.g = 1.0f;
@@ -36,10 +37,12 @@ public class Window {
             case 0:
                 currentScene = new LevelEditorScene();
                 currentScene.init();
+                currentScene.start();
                 break;
             case 1:
                 currentScene = new LevelScene();
                 currentScene.init();
+                currentScene.start();
                 break;
             default:
                 assert false : "Unknown scene '" + newScene + "'";
@@ -54,6 +57,10 @@ public class Window {
         return Window.window;
     }
 
+    public static Scene getScene() {
+        return get().currentScene;
+    }
+
     public void run() {
         IO.println("Hello LWGJL " + Version.getVersion() + "!");
 
@@ -66,7 +73,7 @@ public class Window {
 
         // terminate GLFW and free error callback
         glfwTerminate();
-        glfwSetErrorCallback(null);
+        glfwSetErrorCallback(null).free();
 
     }
 

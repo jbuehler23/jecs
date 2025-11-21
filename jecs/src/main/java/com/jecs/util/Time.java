@@ -4,7 +4,7 @@ public class Time {
     /**
      * Application Start time
      */
-    public static float timeStarted = System.nanoTime();
+    public static long timeStarted = System.nanoTime();
 
     /**
      *
