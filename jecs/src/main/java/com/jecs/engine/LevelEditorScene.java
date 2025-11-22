@@ -1,6 +1,7 @@
 package com.jecs.engine;
 
 import com.jecs.components.SpriteRenderer;
+import com.jecs.util.AssetPool;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 
@@ -37,6 +38,12 @@ public class LevelEditorScene extends Scene {
             }
         }
 
+        loadResources();
+
+    }
+
+    private void loadResources() {
+        AssetPool.getOrAddShader("assets/shaders/default.glsl");
     }
 
     @Override

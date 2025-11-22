@@ -2,6 +2,7 @@ package com.jecs.renderer;
 
 import com.jecs.components.SpriteRenderer;
 import com.jecs.engine.Window;
+import com.jecs.util.AssetPool;
 import org.joml.Vector4f;
 
 import static org.lwjgl.opengl.GL15.*;
@@ -34,8 +35,7 @@ public class RenderBatch {
     private Shader shader;
 
     public RenderBatch(int maxBatchSize) {
-        shader = new Shader("assets/shaders/default.glsl");
-        shader.compileAndLink();
+        shader = AssetPool.getOrAddShader("assets/shaders/default.glsl");
         this.sprites = new SpriteRenderer[maxBatchSize];
         this.maxBatchSize = maxBatchSize;
 
