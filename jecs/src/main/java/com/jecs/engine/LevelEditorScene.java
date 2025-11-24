@@ -14,29 +14,14 @@ public class LevelEditorScene extends Scene {
     public void init() {
         this.camera = new Camera(new Vector2f());
 
-        int xOffset = 10;
-        int yOffset = 10;
 
-        float totalWidth = (float) (600 - xOffset * 2);
-        float totalHeight = (float) (300 - yOffset * 2);
-        float sizeX = totalWidth / 100.0f;
-        float sizeY = totalHeight / 100.0f;
-//        float padding = 3;
+        Entity entity1 = new Entity("Entity 1", new Transform(new Vector2f(100, 100), new Vector2f(256, 256)));
+        entity1.addComponent(new SpriteRenderer(AssetPool.getOrAddTexture("assets/images/testImage.png")));
+        this.addGameObjectToScene(entity1);
 
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y ++) {
-                float xPos = xOffset + (x * sizeX);
-                float yPos = yOffset + (y * sizeY);
-
-//                float xPos = xOffset + (x * sizeX) + (padding * x);
-//                float yPos = yOffset + (y * sizeY) + (padding * y);
-
-                Entity entity = new Entity("Entity " + x + "," + y, new Transform(new Vector2f(xPos, yPos), new Vector2f(sizeX, sizeY)));
-                //should create a gradient
-                entity.addComponent(new SpriteRenderer(new Vector4f(xPos / totalWidth, yPos / totalHeight, 1, 1)));
-                this.addGameObjectToScene(entity);
-            }
-        }
+        Entity entity2 = new Entity("Entity 2", new Transform(new Vector2f(400, 100), new Vector2f(256, 256)));
+        entity2.addComponent(new SpriteRenderer(AssetPool.getOrAddTexture("assets/images/testImage2.png")));
+        this.addGameObjectToScene(entity2);
 
         loadResources();
 
