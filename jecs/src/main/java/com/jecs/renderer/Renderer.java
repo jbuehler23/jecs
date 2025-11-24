@@ -2,6 +2,7 @@ package com.jecs.renderer;
 
 import com.jecs.components.SpriteRenderer;
 import com.jecs.engine.Entity;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +27,12 @@ public class Renderer {
         boolean added = false;
         for (RenderBatch batch : batches) {
             if (batch.hasRoom()) {
-                batch.addSprite(spriteRenderer);
-                added = true;
-                break;
+                Texture tex = spriteRenderer.getTexture();
+                if (tex == null || (batch.hasTexture(tex) || batch.hasTextureRoom())) {
+                    batch.addSprite(spriteRenderer);
+                    added = true;
+                    break;
+                }
             }
         }
         if (!added) {
