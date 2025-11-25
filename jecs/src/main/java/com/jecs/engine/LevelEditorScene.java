@@ -9,6 +9,9 @@ import org.joml.Vector4f;
 
 public class LevelEditorScene extends Scene {
 
+    private Entity entity1;
+    private Spritesheet sprites;
+
     public LevelEditorScene() {
     }
 
@@ -18,9 +21,9 @@ public class LevelEditorScene extends Scene {
 
         this.camera = new Camera(new Vector2f());
 
-        Spritesheet sprites = AssetPool.getSpritesheet("assets/images/spritesheet.png");
+        sprites = AssetPool.getSpritesheet("assets/images/spritesheet.png");
 
-        Entity entity1 = new Entity("Entity 1", new Transform(new Vector2f(100, 100), new Vector2f(256, 256)));
+        entity1 = new Entity("Entity 1", new Transform(new Vector2f(100, 100), new Vector2f(256, 256)));
         entity1.addComponent(new SpriteRenderer(sprites.getSprite(0)));
         this.addGameObjectToScene(entity1);
 
@@ -42,9 +45,23 @@ public class LevelEditorScene extends Scene {
                         0));
     }
 
+    private int spriteIndex = 0;
+    private float spriteFlipTime = 0.2f;
+    private float spriteFlipTimeLeft = 0.0f;
+
     @Override
     public void update(float dt) {
-        IO.println("FPS: " + (1.0f / dt));
+//        IO.println("FPS: " + (1.0f / dt));
+        spriteFlipTimeLeft -= dt;
+        if (spriteFlipTimeLeft <= 0) {
+            spriteFlipTimeLeft = spriteFlipTime;
+            spriteIndex++;
+            if (spriteIndex > 4) {
+                spriteIndex = 0;
+            }
+            entity1.getComponent(SpriteRenderer.class).setSprite(sprites.getSprite(spriteIndex));
+        }
+
         for (Entity entity : this.entities) {
             entity.update(dt);
         }

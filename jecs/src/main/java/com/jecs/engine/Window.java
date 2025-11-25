@@ -26,9 +26,9 @@ public class Window {
         this.width = 1920;
         this.height = 1080;
         this.title = "Demo";
-        this.r = 0.0f;
-        this.g = 0.0f;
-        this.b = 0.0f;
+        this.r = 0.7f;
+        this.g = 0.2f;
+        this.b = 0.1f;
         this.a = 1.0f;
     }
 
