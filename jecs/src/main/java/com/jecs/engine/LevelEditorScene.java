@@ -3,6 +3,7 @@ package com.jecs.engine;
 import com.jecs.components.Sprite;
 import com.jecs.components.SpriteRenderer;
 import com.jecs.components.Spritesheet;
+import com.jecs.renderer.Texture;
 import com.jecs.util.AssetPool;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -23,13 +24,29 @@ public class LevelEditorScene extends Scene {
 
         sprites = AssetPool.getSpritesheet("assets/images/spritesheet.png");
 
-        entity1 = new Entity("Entity 1", new Transform(new Vector2f(100, 100), new Vector2f(256, 256)));
-        entity1.addComponent(new SpriteRenderer(sprites.getSprite(0)));
+
+
+        entity1 = new Entity(
+                "Entity 1",
+                new Transform(new Vector2f(200, 100), new Vector2f(256, 256)),
+                1);
+        entity1.addComponent(new SpriteRenderer(new Sprite(
+                //red image
+                AssetPool.getOrAddTexture("assets/images/blendImage1.png")
+        )));
         this.addGameObjectToScene(entity1);
 
-        Entity entity2 = new Entity("Entity 2", new Transform(new Vector2f(400, 100), new Vector2f(256, 256)));
-        entity2.addComponent(new SpriteRenderer(sprites.getSprite(10)));
+        Entity entity2 = new Entity(
+                "Entity 2",
+                new Transform(new Vector2f(400, 100), new Vector2f(256, 256))
+                ,1);
+        entity2.addComponent(new SpriteRenderer(new Sprite(
+                //green image
+                AssetPool.getOrAddTexture("assets/images/blendImage2.png")
+        )));
         this.addGameObjectToScene(entity2);
+
+
 
 
 
@@ -45,22 +62,22 @@ public class LevelEditorScene extends Scene {
                         0));
     }
 
-    private int spriteIndex = 0;
-    private float spriteFlipTime = 0.2f;
-    private float spriteFlipTimeLeft = 0.0f;
+//    private int spriteIndex = 0;
+//    private float spriteFlipTime = 0.2f;
+//    private float spriteFlipTimeLeft = 0.0f;
 
     @Override
     public void update(float dt) {
 //        IO.println("FPS: " + (1.0f / dt));
-        spriteFlipTimeLeft -= dt;
-        if (spriteFlipTimeLeft <= 0) {
-            spriteFlipTimeLeft = spriteFlipTime;
-            spriteIndex++;
-            if (spriteIndex > 4) {
-                spriteIndex = 0;
-            }
-            entity1.getComponent(SpriteRenderer.class).setSprite(sprites.getSprite(spriteIndex));
-        }
+//        spriteFlipTimeLeft -= dt;
+//        if (spriteFlipTimeLeft <= 0) {
+//            spriteFlipTimeLeft = spriteFlipTime;
+//            spriteIndex++;
+//            if (spriteIndex > 4) {
+//                spriteIndex = 0;
+//            }
+//            entity1.getComponent(SpriteRenderer.class).setSprite(sprites.getSprite(spriteIndex));
+//        }
 
         for (Entity entity : this.entities) {
             entity.update(dt);

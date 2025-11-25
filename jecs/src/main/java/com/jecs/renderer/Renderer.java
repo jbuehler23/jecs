@@ -5,6 +5,7 @@ import com.jecs.engine.Entity;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Renderer {
@@ -26,7 +27,8 @@ public class Renderer {
     private void addSpriteRenderer(SpriteRenderer spriteRenderer) {
         boolean added = false;
         for (RenderBatch batch : batches) {
-            if (batch.hasRoom()) {
+            //check to make sure the current batch z-index matches the sprites z-index
+            if (batch.hasRoom() && batch.zIndex() == spriteRenderer.entity.zIndex()) {
                 Texture tex = spriteRenderer.getTexture();
                 if (tex == null || (batch.hasTexture(tex) || batch.hasTextureRoom())) {
                     batch.addSprite(spriteRenderer);
@@ -36,10 +38,12 @@ public class Renderer {
             }
         }
         if (!added) {
-            RenderBatch newBatch = new RenderBatch(MAX_BATCH_SIZE);
+            RenderBatch newBatch = new RenderBatch(MAX_BATCH_SIZE, spriteRenderer.entity.zIndex());
             newBatch.start();
             batches.add(newBatch);
             newBatch.addSprite(spriteRenderer);
+            //sort batches by z-index
+            Collections.sort(batches);
         }
     }
 

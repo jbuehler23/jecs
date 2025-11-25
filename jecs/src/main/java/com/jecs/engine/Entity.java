@@ -8,15 +8,18 @@ public class Entity {
     private final String name;
     private final List<Component> components;
     public Transform transform;
+    private final int zIndex;
 
     public Entity(String name) {
         this.name = name;
         this.components = new ArrayList<>();
         this.transform = new Transform();
+        this.zIndex = 0;
     }
 
-    public Entity(String name, Transform transform) {
+    public Entity(String name, Transform transform, int zIndex) {
         this.name = name;
+        this.zIndex = zIndex;
         this.components = new ArrayList<>();
         this.transform = transform;
     }
@@ -64,5 +67,9 @@ public class Entity {
 
     public String getName() {
         return name;
+    }
+
+    public int zIndex() {
+        return zIndex;
     }
 }

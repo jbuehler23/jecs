@@ -11,8 +11,8 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
     private final String title;
     private long glfwWindow;
     public float r, g, b, a;
@@ -21,14 +21,15 @@ public class Window {
     private static Window window = null;
 
     private static Scene currentScene;
+    private ImGuiLayer imGuiLayer;
 
     private Window() {
         this.width = 1920;
         this.height = 1080;
         this.title = "Demo";
-        this.r = 0.7f;
-        this.g = 0.2f;
-        this.b = 0.1f;
+        this.r = 1f;
+        this.g = 1f;
+        this.b = 1f;
         this.a = 1.0f;
     }
 
@@ -94,6 +95,8 @@ public class Window {
                 currentScene.update(dt);
             }
 
+            this.imGuiLayer.draw();
+
             // swap buffers automatically
             glfwSwapBuffers(glfwWindow);
 
@@ -131,6 +134,11 @@ public class Window {
         glfwSetKeyCallback(glfwWindow, KeyListener::keyCallback);
         // TODO: Set up controller input based on same callbacks
 
+        glfwSetWindowSizeCallback(glfwWindow, (w, newWidth, newHeight) -> {
+            Window.setWidth(newWidth);
+            Window.setHeight(newHeight);
+        });
+
         // Make the OpenGL Context current
         glfwMakeContextCurrent(glfwWindow);
         // Enable v-sync - swap every frame
@@ -146,6 +154,28 @@ public class Window {
         // bindings available for use.
         GL.createCapabilities();
 
+        //enable alpha-blending
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        this.imGuiLayer = new ImGuiLayer(glfwWindow);
+        this.imGuiLayer.init();
+
         Window.changeScene(0);
+    }
+
+    private static void setHeight(int newHeight) {
+        get().height = newHeight;
+    }
+
+    private static void setWidth(int newWidth) {
+        get().width = newWidth;
+    }
+
+    public static int getWidth() {
+        return get().width;
+    }
+
+    public static int getHeight() {
+        return get().height;
     }
 }
