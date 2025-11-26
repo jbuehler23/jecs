@@ -2,7 +2,8 @@ package com.jecs.engine;
 
 public abstract class Component {
 
-    public Entity entity = null;
+
+    public transient Entity entity = null;
 
     public void update(float dt){
         //NOOP

@@ -9,11 +9,16 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.stb.STBImage.*;
 
 public class Texture {
-    private final String filepath;
-    private final int texID;
+    private String filepath;
+    private int texID;
     private int width, height;
 
-    public Texture(String filepath) {
+//    public Texture(String filepath) {
+//
+//
+//    }
+
+    public Texture init(String filepath) {
         this.filepath = filepath;
 
         //generate Texture on GPU
@@ -51,7 +56,7 @@ public class Texture {
 
         //frees memory that STB has allocated - not using JVM
         stbi_image_free(image);
-
+        return this;
     }
 
     public void bind() {

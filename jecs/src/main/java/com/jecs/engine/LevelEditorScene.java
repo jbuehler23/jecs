@@ -1,5 +1,7 @@
 package com.jecs.engine;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.jecs.components.Sprite;
 import com.jecs.components.SpriteRenderer;
 import com.jecs.components.Spritesheet;
@@ -13,6 +15,7 @@ public class LevelEditorScene extends Scene {
 
     private Entity entity1;
     private Spritesheet sprites;
+    private SpriteRenderer entity1SpriteRenderer;
 
     public LevelEditorScene() {
     }
@@ -25,13 +28,12 @@ public class LevelEditorScene extends Scene {
 
         sprites = AssetPool.getSpritesheet("assets/images/spritesheet.png");
 
-
-
         entity1 = new Entity(
                 "Entity 1",
                 new Transform(new Vector2f(200, 100), new Vector2f(256, 256)),
                 2);
-        entity1.addComponent(new SpriteRenderer(new Vector4f(1, 0, 0, 1)));
+        entity1SpriteRenderer = new SpriteRenderer().withColor(new Vector4f(1, 0, 0, 1));
+        entity1.addComponent(entity1SpriteRenderer);
         this.addGameObjectToScene(entity1);
         //hardcode the selected entity to be this one
         this.activeEntity = entity1;
@@ -40,14 +42,17 @@ public class LevelEditorScene extends Scene {
                 "Entity 2",
                 new Transform(new Vector2f(400, 100), new Vector2f(256, 256))
                 ,3);
-        entity2.addComponent(new SpriteRenderer(new Sprite(
-                //green image
-                AssetPool.getOrAddTexture("assets/images/blendImage2.png")
-        )));
+        SpriteRenderer entity2SpriteRenderer = new SpriteRenderer()
+                .withSprite(new Sprite().withTexture(AssetPool.getOrAddTexture("assets/images/blendImage2.png")));
+        entity2.addComponent(entity2SpriteRenderer);
         this.addGameObjectToScene(entity2);
 
-
-
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+        String serialized = gson.toJson(entity1);
+        Entity entity = gson.fromJson(serialized, Entity.class);
+        IO.println(entity);
 
 
     }
@@ -78,6 +83,12 @@ public class LevelEditorScene extends Scene {
 //            }
 //            entity1.getComponent(SpriteRenderer.class).setSprite(sprites.getSprite(spriteIndex));
 //        }
+//        Gson gson = new GsonBuilder()
+//                .setPrettyPrinting()
+//                .create();
+//
+//        IO.println(gson.toJson(entity1SpriteRenderer));
+
 
         for (Entity entity : this.entities) {
             entity.update(dt);

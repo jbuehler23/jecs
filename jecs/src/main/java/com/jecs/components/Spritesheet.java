@@ -35,7 +35,9 @@ public class Spritesheet {
                     new Vector2f(leftX, topY),
             };
 
-            Sprite sprite = new Sprite(this.texture, texCoords);
+            Sprite sprite = new Sprite()
+                    .withTexture(this.texture)
+                    .withTexCoords(texCoords);
             this.sprites.add(sprite);
 
             currentX += spriteWidth + padding;

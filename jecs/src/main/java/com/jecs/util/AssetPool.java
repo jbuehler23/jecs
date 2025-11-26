@@ -44,7 +44,7 @@ public class AssetPool {
             return AssetPool.textures.get(file.getAbsolutePath());
         } else {
             //TODO: could just throw an error instead of adding if it's not loaded before trying to get
-            Texture texture = new Texture(resourceName);
+            Texture texture = new Texture().init(resourceName);
             AssetPool.textures.put(file.getAbsolutePath(), texture);
             return texture;
         }
