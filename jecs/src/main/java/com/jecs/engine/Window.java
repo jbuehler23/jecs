@@ -95,7 +95,7 @@ public class Window {
                 currentScene.update(dt);
             }
 
-            this.imGuiLayer.draw();
+            this.imGuiLayer.draw(currentScene);
 
             // swap buffers automatically
             glfwSwapBuffers(glfwWindow);

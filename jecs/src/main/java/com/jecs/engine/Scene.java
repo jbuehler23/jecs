@@ -1,6 +1,7 @@
 package com.jecs.engine;
 
 import com.jecs.renderer.Renderer;
+import imgui.ImGui;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ public abstract class Scene {
 
     private boolean isRunning = false;
     final List<Entity> entities = new ArrayList<>();
+    protected Entity activeEntity = null;
 
     public Scene() {
 
@@ -43,5 +45,19 @@ public abstract class Scene {
 
     public Camera camera() {
         return this.camera;
+    }
+
+    public void sceneImgui(){
+        if (activeEntity != null) {
+            ImGui.begin("Inspector");
+            activeEntity.imgui();
+            ImGui.end();
+        }
+
+        imgui();
+    }
+
+    public void imgui() {
+        //create custom scene-integrated stuff
     }
 }

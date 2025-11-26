@@ -5,6 +5,7 @@ import com.jecs.components.SpriteRenderer;
 import com.jecs.components.Spritesheet;
 import com.jecs.renderer.Texture;
 import com.jecs.util.AssetPool;
+import imgui.ImGui;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 
@@ -29,17 +30,16 @@ public class LevelEditorScene extends Scene {
         entity1 = new Entity(
                 "Entity 1",
                 new Transform(new Vector2f(200, 100), new Vector2f(256, 256)),
-                1);
-        entity1.addComponent(new SpriteRenderer(new Sprite(
-                //red image
-                AssetPool.getOrAddTexture("assets/images/blendImage1.png")
-        )));
+                2);
+        entity1.addComponent(new SpriteRenderer(new Vector4f(1, 0, 0, 1)));
         this.addGameObjectToScene(entity1);
+        //hardcode the selected entity to be this one
+        this.activeEntity = entity1;
 
         Entity entity2 = new Entity(
                 "Entity 2",
                 new Transform(new Vector2f(400, 100), new Vector2f(256, 256))
-                ,1);
+                ,3);
         entity2.addComponent(new SpriteRenderer(new Sprite(
                 //green image
                 AssetPool.getOrAddTexture("assets/images/blendImage2.png")
@@ -86,4 +86,10 @@ public class LevelEditorScene extends Scene {
         this.renderer.render();
     }
 
+    @Override
+    public void imgui() {
+        ImGui.begin("Test Window");
+        ImGui.text("Some random text");
+        ImGui.end();
+    }
 }

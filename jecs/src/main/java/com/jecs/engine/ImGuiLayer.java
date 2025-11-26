@@ -1,19 +1,16 @@
 package com.jecs.engine;
 
-import imgui.ImGui;
-import imgui.ImGuiIO;
+import imgui.*;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.opengl.GL32;
 
 import java.util.Objects;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
 
 public class ImGuiLayer {
     private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
@@ -58,7 +55,43 @@ public class ImGuiLayer {
     private void initImGui() {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
+        io.setIniFilename("imgui.ini");
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
+        initFonts(io);
+    }
+
+    /**
+     * Example of fonts configuration
+     * For more information read: https://github.com/ocornut/imgui/blob/33cdbe97b8fd233c6c12ca216e76398c2e89b0d8/docs/FONTS.md
+     */
+    private void initFonts(final ImGuiIO io) {
+        // This enables FreeType font renderer, which is disabled by default.
+        io.getFonts().setFreeTypeRenderer(true);
+
+        // Add default font for latin glyphs
+//        io.getFonts().addFontDefault();
+
+        // You can use the ImFontGlyphRangesBuilder helper to create glyph ranges based on text input.
+        // For example: for a game where your script is known, if you can feed your entire script to it (using addText) and only build the characters the game needs.
+        // Here we are using it just to combine all required glyphs in one place
+        final ImFontGlyphRangesBuilder rangesBuilder = new ImFontGlyphRangesBuilder(); // Glyphs ranges provide
+        rangesBuilder.addRanges(io.getFonts().getGlyphRangesDefault());
+
+        // Font config for additional fonts
+        // This is a natively allocated struct so don't forget to call destroy after atlas is built
+        final ImFontConfig fontConfig = new ImFontConfig();
+        fontConfig.setPixelSnapH(true);
+        io.getFonts().addFontFromFileTTF("assets/fonts/CascadiaCode-Regular.ttf", 16, fontConfig);
+
+
+//        final short[] glyphRanges = rangesBuilder.buildRanges();
+//        io.getFonts().addFontFromMemoryTTF(loadFromResources("Tahoma.ttf"), 14, fontConfig, glyphRanges); // cyrillic glyphs
+//        io.getFonts().addFontFromMemoryTTF(loadFromResources("NotoSansCJKjp-Medium.otf"), 14, fontConfig, glyphRanges); // japanese glyphs
+//        io.getFonts().addFontFromMemoryTTF(loadFromResources("fa-regular-400.ttf"), 14, fontConfig, glyphRanges); // font awesome
+//        io.getFonts().addFontFromMemoryTTF(loadFromResources("fa-solid-900.ttf"), 14, fontConfig, glyphRanges); // font awesome
+//        io.getFonts().build();
+
+        fontConfig.destroy();
     }
 
     /**
@@ -92,8 +125,9 @@ public class ImGuiLayer {
 
     }
 
-    public void draw() {
+    public void draw(Scene currentScene) {
         startFrame();
+        currentScene.sceneImgui();
         ImGui.showDemoWindow();
         endFrame();
     }

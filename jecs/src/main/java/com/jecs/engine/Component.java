@@ -4,9 +4,15 @@ public abstract class Component {
 
     public Entity entity = null;
 
-    public abstract void update(float dt);
+    public void update(float dt){
+        //NOOP
+    }
 
     public void start() {
+        //NOOP
+    }
+
+    public void imgui() {
         //NOOP
     }
 }
