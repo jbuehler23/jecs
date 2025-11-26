@@ -2,6 +2,7 @@ package com.jecs.engine;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.jecs.components.RigidBody;
 import com.jecs.components.Sprite;
 import com.jecs.components.SpriteRenderer;
 import com.jecs.components.Spritesheet;
@@ -25,6 +26,7 @@ public class LevelEditorScene extends Scene {
         loadResources();
         this.camera = new Camera(new Vector2f());
         if (loaded) {
+            this.activeEntity = entities.getFirst();
             return;
         }
 
@@ -36,6 +38,7 @@ public class LevelEditorScene extends Scene {
                 2);
         entity1SpriteRenderer = new SpriteRenderer().withColor(new Vector4f(1, 0, 0, 1));
         entity1.addComponent(entity1SpriteRenderer);
+        entity1.addComponent(new RigidBody());
         this.addGameObjectToScene(entity1);
         //hardcode the selected entity to be this one
         this.activeEntity = entity1;
@@ -60,6 +63,7 @@ public class LevelEditorScene extends Scene {
                         16,
                         26,
                         0));
+        AssetPool.getOrAddTexture("assets/images/blendImage2.png");
     }
 
 //    private int spriteIndex = 0;
