@@ -83,6 +83,7 @@ public class Window {
         float endTime;
         float dt = -1.0f;
 
+        currentScene.load();
         while (!glfwWindowShouldClose(glfwWindow)) {
             // Poll events
             glfwPollEvents();
@@ -104,6 +105,7 @@ public class Window {
             dt = endTime - beginTime;
             beginTime = endTime;
         }
+        currentScene.save();
     }
 
     public void init() {
