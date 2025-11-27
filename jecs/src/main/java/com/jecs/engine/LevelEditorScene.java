@@ -1,14 +1,12 @@
 package com.jecs.engine;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.jecs.components.RigidBody;
 import com.jecs.components.Sprite;
 import com.jecs.components.SpriteRenderer;
 import com.jecs.components.Spritesheet;
-import com.jecs.renderer.Texture;
 import com.jecs.util.AssetPool;
 import imgui.ImGui;
+import imgui.ImVec2;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 
@@ -25,12 +23,12 @@ public class LevelEditorScene extends Scene {
     public void init() {
         loadResources();
         this.camera = new Camera(new Vector2f());
+        sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
         if (loaded) {
             this.activeEntity = entities.getFirst();
             return;
         }
 
-        sprites = AssetPool.getSpritesheet("assets/images/spritesheet.png");
 
         entity1 = new Entity(
                 "Entity 1",
@@ -48,7 +46,7 @@ public class LevelEditorScene extends Scene {
                 new Transform(new Vector2f(400, 100), new Vector2f(256, 256))
                 ,3);
         SpriteRenderer entity2SpriteRenderer = new SpriteRenderer()
-                .withSprite(new Sprite().withTexture(AssetPool.getOrAddTexture("assets/images/blendImage2.png")));
+                .withSprite(new Sprite().setTexture(AssetPool.getOrAddTexture("assets/images/blendImage2.png")));
         entity2.addComponent(entity2SpriteRenderer);
         this.addGameObjectToScene(entity2);
 
@@ -57,11 +55,12 @@ public class LevelEditorScene extends Scene {
 
     private void loadResources() {
         AssetPool.getOrAddShader("assets/shaders/default.glsl");
-        AssetPool.addSpritesheet("assets/images/spritesheet.png",
-                new Spritesheet(AssetPool.getOrAddTexture("assets/images/spritesheet.png"),
+
+        AssetPool.addSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png",
+                new Spritesheet(AssetPool.getOrAddTexture("assets/images/spritesheets/decorationsAndBlocks.png"),
                         16,
                         16,
-                        26,
+                        81,
                         0));
         AssetPool.getOrAddTexture("assets/images/blendImage2.png");
     }
@@ -99,7 +98,38 @@ public class LevelEditorScene extends Scene {
     @Override
     public void imgui() {
         ImGui.begin("Test Window");
-        ImGui.text("Some random text");
+
+        ImVec2 windowPos = new ImVec2();
+        ImGui.getWindowPos(windowPos);
+        ImVec2 windowSize = new ImVec2();
+        ImGui.getWindowSize(windowSize);
+        ImVec2 itemSpacing = new ImVec2();
+        ImGui.getStyle().getItemSpacing(itemSpacing);
+
+        float windowX2 = windowPos.x + windowSize.x;
+        for (int i = 0; i < sprites.size(); i++) {
+            //loop through the sprites in the sheet and place on a new line if we need to
+            Sprite sprite = sprites.getSprite(i);
+            float spriteWidth = sprite.getWidth() * 4;
+            float spriteHeight = sprite.getHeight() * 4;
+            int id = sprite.getTexId();
+            Vector2f[] texCoords = sprite.getTexCoords();
+
+            ImGui.pushID(i);
+            if (ImGui.imageButton(String.valueOf(id), id, spriteWidth, spriteHeight, texCoords[0].x, texCoords[0].y, texCoords[2].x, texCoords[2].y)) {
+                IO.println("Button " + i + "clicked");
+            }
+            ImGui.popID();
+
+            ImVec2 lastButtonPos = new ImVec2();
+            ImGui.getItemRectMax(lastButtonPos);
+            float lastButtonX2 = lastButtonPos.x;
+            float nextButtonX2 = lastButtonX2 + itemSpacing.x + spriteWidth;
+
+            if (i + 1 < sprites.size() && nextButtonX2 < windowX2) {
+                ImGui.sameLine();
+            }
+        }
         ImGui.end();
     }
 }

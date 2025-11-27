@@ -6,7 +6,6 @@ import org.joml.Vector4f;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Vector;
 
 public abstract class Component {
 
@@ -33,7 +32,7 @@ public abstract class Component {
                 if (isPrivate) {
                     f.setAccessible(true);
                 }
-                Class type = f.getType();
+                Class<?> type = f.getType();
                 Object value = f.get(this);
                 String name = f.getName();
 
