@@ -1,7 +1,5 @@
 package com.jecs.components;
 
-import com.jecs.engine.Component;
-
 public class FontRenderer extends Component {
 
     @Override

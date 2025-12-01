@@ -1,6 +1,5 @@
 package com.jecs.components;
 
-import com.jecs.engine.Component;
 import com.jecs.engine.Transform;
 import com.jecs.renderer.Texture;
 import imgui.ImGui;

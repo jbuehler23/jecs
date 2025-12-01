@@ -1,4 +1,6 @@
-package com.jecs.engine;
+package com.jecs.scenes;
+
+import com.jecs.engine.Window;
 
 public class LevelScene extends Scene {
 

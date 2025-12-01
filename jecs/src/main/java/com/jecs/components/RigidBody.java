@@ -1,6 +1,5 @@
 package com.jecs.components;
 
-import com.jecs.engine.Component;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 

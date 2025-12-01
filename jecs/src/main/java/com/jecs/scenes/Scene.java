@@ -1,7 +1,12 @@
-package com.jecs.engine;
+package com.jecs.scenes;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.jecs.components.Component;
+import com.jecs.components.ComponentSerde;
+import com.jecs.engine.Camera;
+import com.jecs.engine.Entity;
+import com.jecs.engine.EntitySerde;
 import com.jecs.renderer.Renderer;
 import imgui.ImGui;
 
@@ -40,7 +45,7 @@ public abstract class Scene {
         isRunning = true;
     }
 
-    public void addGameObjectToScene(Entity entity) {
+    public void addEntityToScene(Entity entity) {
         if (!isRunning) {
             entities.add(entity);
         } else {
@@ -83,10 +88,29 @@ public abstract class Scene {
         }
 
         if (!inFile.isEmpty()) {
+            int maxEntityId = -1;
+            int maxComponentId = -1;
             Entity[] entities = gson.fromJson(inFile, Entity[].class);
-            for (Entity e : entities) {
-                addGameObjectToScene(e);
+            for (Entity entity : entities) {
+                addEntityToScene(entity);
+
+                for (Component c : entity.getAllComponents()) {
+                    if (c.getUid() > maxComponentId) {
+                        maxComponentId = c.getUid();
+                    }
+
+                }
+
+                if (entity.getUid() > maxEntityId) {
+                    maxEntityId = entity.getUid();
+                }
             }
+            maxComponentId++;
+            maxEntityId++;
+            IO.println(maxEntityId);
+            IO.println(maxComponentId);
+            Entity.init(maxEntityId);
+            Component.init(maxComponentId);
             this.loaded = true;
         }
     }

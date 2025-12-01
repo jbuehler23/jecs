@@ -1,5 +1,6 @@
 package com.jecs.engine;
 
+import com.jecs.scenes.Scene;
 import imgui.*;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
@@ -58,6 +59,7 @@ public class ImGuiLayer {
         io.setIniFilename("imgui.ini");
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
         initFonts(io);
+
     }
 
     /**

@@ -118,7 +118,8 @@ public class MouseListener {
     }
 
     public static float getWorldY() {
-        float currentY = getY();
+        //Y-Coords are flipped from projection
+        float currentY = Window.getHeight() - getY();
         //converts to 0-1 range first, then convert to -1, 1
         currentY = (currentY / (float) Window.getHeight()) * 2.0f - 1.0f;
         Vector4f tmp = new Vector4f(0, currentY, 0 , 1);

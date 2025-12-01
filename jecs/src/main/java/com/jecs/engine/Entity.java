@@ -1,27 +1,25 @@
 package com.jecs.engine;
 
+import com.jecs.components.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Entity {
 
+    private static int ID_COUNTER = 0;
+    private int uid = -1;
     private final String name;
     private final List<Component> components;
     public Transform transform;
     private final int zIndex;
-
-    public Entity(String name) {
-        this.name = name;
-        this.components = new ArrayList<>();
-        this.transform = new Transform();
-        this.zIndex = 0;
-    }
 
     public Entity(String name, Transform transform, int zIndex) {
         this.name = name;
         this.zIndex = zIndex;
         this.components = new ArrayList<>();
         this.transform = transform;
+        this.uid = ID_COUNTER++;
     }
 
     public <T extends Component> T getComponent(Class<T> componentClass) {
@@ -49,6 +47,7 @@ public class Entity {
     }
 
     public void addComponent(Component c) {
+        c.generateId();
         this.components.add(c);
         c.entity = this;
     }
@@ -77,5 +76,17 @@ public class Entity {
         for (Component c : components) {
             c.imgui();
         }
+    }
+
+    public static void init(int maxId) {
+        ID_COUNTER = maxId;
+    }
+
+    public int getUid() {
+        return this.uid;
+    }
+
+    public List<Component> getAllComponents() {
+        return this.components;
     }
 }

@@ -1,4 +1,4 @@
-package com.jecs.engine;
+package com.jecs.components;
 
 import com.google.gson.*;
 

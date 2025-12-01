@@ -1,6 +1,7 @@
 package com.jecs.engine;
 
 import com.google.gson.*;
+import com.jecs.components.Component;
 
 import java.lang.reflect.Type;
 

@@ -1,13 +1,16 @@
-package com.jecs.engine;
+package com.jecs.scenes;
 
-import com.jecs.components.RigidBody;
-import com.jecs.components.Sprite;
-import com.jecs.components.SpriteRenderer;
-import com.jecs.components.Spritesheet;
+import com.jecs.components.*;
+import com.jecs.engine.Camera;
+import com.jecs.engine.Entity;
+import com.jecs.engine.Prefabs;
+import com.jecs.engine.Transform;
+import com.jecs.renderer.DebugDraw;
 import com.jecs.util.AssetPool;
 import imgui.ImGui;
 import imgui.ImVec2;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public class LevelEditorScene extends Scene {
@@ -15,6 +18,8 @@ public class LevelEditorScene extends Scene {
     private Entity entity1;
     private Spritesheet sprites;
     private SpriteRenderer entity1SpriteRenderer;
+
+    MouseControls mouseControls = new MouseControls();
 
     public LevelEditorScene() {
     }
@@ -24,6 +29,7 @@ public class LevelEditorScene extends Scene {
         loadResources();
         this.camera = new Camera(new Vector2f());
         sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
+//        DebugDraw.addLine2D(new Vector2f(0,0), new Vector2f(800, 800), new Vector3f(1, 0, 0), 6000);
         if (loaded) {
             this.activeEntity = entities.getFirst();
             return;
@@ -37,7 +43,7 @@ public class LevelEditorScene extends Scene {
         entity1SpriteRenderer = new SpriteRenderer().withColor(new Vector4f(1, 0, 0, 1));
         entity1.addComponent(entity1SpriteRenderer);
         entity1.addComponent(new RigidBody());
-        this.addGameObjectToScene(entity1);
+        this.addEntityToScene(entity1);
         //hardcode the selected entity to be this one
         this.activeEntity = entity1;
 
@@ -48,7 +54,8 @@ public class LevelEditorScene extends Scene {
         SpriteRenderer entity2SpriteRenderer = new SpriteRenderer()
                 .withSprite(new Sprite().setTexture(AssetPool.getOrAddTexture("assets/images/blendImage2.png")));
         entity2.addComponent(entity2SpriteRenderer);
-        this.addGameObjectToScene(entity2);
+        this.addEntityToScene(entity2);
+
 
 
     }
@@ -69,6 +76,7 @@ public class LevelEditorScene extends Scene {
 //    private float spriteFlipTime = 0.2f;
 //    private float spriteFlipTimeLeft = 0.0f;
 
+    float t = 0.0f;
     @Override
     public void update(float dt) {
 //        IO.println("FPS: " + (1.0f / dt));
@@ -87,6 +95,12 @@ public class LevelEditorScene extends Scene {
 //
 //        IO.println(gson.toJson(entity1SpriteRenderer));
 
+        float x = ((float) Math.sin(t) * 200.0f) + 600;
+        float y = ((float) Math.cos(t) * 200.0f) + 400;
+        t += 0.05f;
+        DebugDraw.addLine2D(new Vector2f(600, 400), new Vector2f(x, y), new Vector3f(0, 0, 1));
+
+        mouseControls.update(dt);
 
         for (Entity entity : this.entities) {
             entity.update(dt);
@@ -117,7 +131,9 @@ public class LevelEditorScene extends Scene {
 
             ImGui.pushID(i);
             if (ImGui.imageButton(String.valueOf(id), id, spriteWidth, spriteHeight, texCoords[0].x, texCoords[0].y, texCoords[2].x, texCoords[2].y)) {
-                IO.println("Button " + i + "clicked");
+                Entity entity = Prefabs.generateSpriteObject(sprite, spriteWidth, spriteHeight);
+                // Attach this to mouse cursor
+                mouseControls.pickupEntity(entity);
             }
             ImGui.popID();
 

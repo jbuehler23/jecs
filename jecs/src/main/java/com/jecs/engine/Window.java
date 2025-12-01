@@ -1,8 +1,12 @@
 package com.jecs.engine;
 
-import com.jecs.util.Time;
+import com.jecs.renderer.DebugDraw;
+import com.jecs.scenes.LevelEditorScene;
+import com.jecs.scenes.LevelScene;
+import com.jecs.scenes.Scene;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
@@ -87,11 +91,14 @@ public class Window {
             // Poll events
             glfwPollEvents();
 
+            DebugDraw.beginFrame();
+
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
 
             //check if we've done a frame
             if (dt >= 0.0f) {
+                DebugDraw.draw();
                 currentScene.update(dt);
             }
 
@@ -124,6 +131,7 @@ public class Window {
 
         // Create window
         glfwWindow = glfwCreateWindow(this.width, this.height, this.title, NULL, NULL);
+
 
         if (glfwWindow == NULL) {
             throw new IllegalStateException("Failed to create the GLFW window");

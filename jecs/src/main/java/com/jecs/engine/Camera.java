@@ -20,7 +20,8 @@ public class Camera {
     public void adjustProjection() {
         //gives us an identity matrix (similar to 1)
         projectionMatrix.identity();
-        projectionMatrix.ortho(0.0f, 32.0f * 40.f, 0.0f, 32.0f * 21.0f, 0.0f, 100.0f);
+        projectionMatrix.ortho(0.0f, 32.0f * 40.f, 0.0f, 32.0f * 21.f, 0.0f, 100.0f);
+//        projectionMatrix.ortho(0.0f, 32.0f * 60.0f, 0.0f, 32.0f * 33.75f, 0.0f, 100.0f);
         projectionMatrix.invert(inverseProjection);
     }
 
