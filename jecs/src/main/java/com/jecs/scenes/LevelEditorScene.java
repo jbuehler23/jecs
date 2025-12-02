@@ -77,6 +77,9 @@ public class LevelEditorScene extends Scene {
 //    private float spriteFlipTimeLeft = 0.0f;
 
 //    float t = 0.0f;
+    float angle = 0.0f;
+    float x = 0.0f;
+    float y = 0.0f;
     @Override
     public void update(float dt) {
 //        IO.println("FPS: " + (1.0f / dt));
@@ -99,7 +102,14 @@ public class LevelEditorScene extends Scene {
 //        float y = ((float) Math.cos(t) * 200.0f) + 400;
 //        t += 0.05f;
 //        DebugDraw.addLine2D(new Vector2f(600, 400), new Vector2f(x, y), new Vector3f(0, 0, 1));
+
         levelEditorStuff.update(dt);
+        DebugDraw.addCircle2D(new Vector2f(x, y), 64, new Vector3f(0, 1, 0), 1);
+        x += 50f * dt;
+        y += 50f * dt;
+
+//        DebugDraw.addBox2D(new Vector2f(400, 200), new Vector2f(64, 32), angle, new Vector3f(0, 1, 0), 1);
+        angle += 10.0f * dt;
 //        float mouseX = MouseListener.getWorldX();
 //        float mouseY = MouseListener.getWorldY();
 //        // Draw a small crosshair at mouse position
