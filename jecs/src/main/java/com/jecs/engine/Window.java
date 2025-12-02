@@ -156,6 +156,13 @@ public class Window {
         // Make the window visible
         glfwShowWindow(glfwWindow);
 
+        // query actual window size (for maximized windows)
+        int[] widthArr = new int[1];
+        int[] heightArr = new int[1];
+        glfwGetWindowSize(glfwWindow, widthArr, heightArr);
+        this.width = widthArr[0];
+        this.height = heightArr[0];
+
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
         // LWJGL detects the context that is current in the current thread,

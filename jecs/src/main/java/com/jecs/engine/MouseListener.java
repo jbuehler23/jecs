@@ -111,7 +111,7 @@ public class MouseListener {
         //converts to 0-1 range first, then convert to -1, 1
         currentX = (currentX / (float) Window.getWidth()) * 2.0f - 1.0f;
         Vector4f tmp = new Vector4f(currentX, 0, 0 , 1);
-        tmp.mul(Window.getScene().camera().getInverseProjection().mul(Window.getScene().camera().getInverseView()));
+        tmp.mul(Window.getScene().camera().getInverseProjection()).mul(Window.getScene().camera().getInverseView());
         currentX = tmp.x;
 
         return currentX;
@@ -123,7 +123,7 @@ public class MouseListener {
         //converts to 0-1 range first, then convert to -1, 1
         currentY = (currentY / (float) Window.getHeight()) * 2.0f - 1.0f;
         Vector4f tmp = new Vector4f(0, currentY, 0 , 1);
-        tmp.mul(Window.getScene().camera().getInverseProjection().mul(Window.getScene().camera().getInverseView()));
+        tmp.mul(Window.getScene().camera().getInverseProjection()).mul(Window.getScene().camera().getInverseView());
         currentY = tmp.y;
 
         return currentY;
