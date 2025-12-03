@@ -1,6 +1,7 @@
 package com.jecs.engine;
 
 import com.jecs.renderer.DebugDraw;
+import com.jecs.renderer.FrameBuffer;
 import com.jecs.scenes.LevelEditorScene;
 import com.jecs.scenes.LevelScene;
 import com.jecs.scenes.Scene;
@@ -26,6 +27,7 @@ public class Window {
 
     private static Scene currentScene;
     private ImGuiLayer imGuiLayer;
+    private FrameBuffer frameBuffer;
 
     private Window() {
         this.width = 1920;
@@ -96,11 +98,15 @@ public class Window {
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
 
+            this.frameBuffer.bind();
+
             //check if we've done a frame
             if (dt >= 0.0f) {
                 DebugDraw.draw();
                 currentScene.update(dt);
             }
+
+            this.frameBuffer.unbind();
 
             this.imGuiLayer.draw(currentScene);
 
@@ -175,6 +181,10 @@ public class Window {
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         this.imGuiLayer = new ImGuiLayer(glfwWindow);
         this.imGuiLayer.init();
+
+
+        //TODO: Query for monitor's real size
+        this.frameBuffer = new FrameBuffer(1920, 1080);
 
         Window.changeScene(0);
     }

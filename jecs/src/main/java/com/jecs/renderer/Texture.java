@@ -4,6 +4,7 @@ import org.lwjgl.BufferUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Objects;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.stb.STBImage.*;
@@ -13,10 +14,21 @@ public class Texture {
     private int texID;
     private int width, height;
 
-//    public Texture(String filepath) {
-//
-//
-//    }
+    public Texture() {
+        texID = -1;
+        this.width = -1;
+        this.height = -1;
+    }
+
+    public Texture(int width, int height) {
+        this.filepath = "Generated";
+
+        //generate Texture on GPU
+        this.texID = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, texID);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    }
 
     public Texture init(String filepath) {
         this.filepath = filepath;
@@ -77,5 +89,21 @@ public class Texture {
 
     public int getId() {
         return this.texID;
+    }
+
+    public String getFilepath() {
+        return filepath;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Texture texture = (Texture) o;
+        return texID == texture.texID && width == texture.width && height == texture.height && Objects.equals(filepath, texture.filepath);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(filepath, texID, width, height);
     }
 }
