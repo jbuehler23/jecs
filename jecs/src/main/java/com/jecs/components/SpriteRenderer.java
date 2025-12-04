@@ -92,4 +92,9 @@ public class SpriteRenderer extends Component {
         this.setSprite(sprite);
         return this;
     }
+
+    public SpriteRenderer withTexture(Texture texture) {
+        this.sprite.setTexture(texture);
+        return this;
+    }
 }

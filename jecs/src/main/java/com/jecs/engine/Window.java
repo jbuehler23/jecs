@@ -98,7 +98,7 @@ public class Window {
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            this.frameBuffer.bind();
+//            this.frameBuffer.bind();
 
             //check if we've done a frame
             if (dt >= 0.0f) {

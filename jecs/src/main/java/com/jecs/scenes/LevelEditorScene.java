@@ -31,7 +31,9 @@ public class LevelEditorScene extends Scene {
         sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
 //        DebugDraw.addLine2D(new Vector2f(0,0), new Vector2f(800, 800), new Vector3f(1, 0, 0), 6000);
         if (loaded) {
-            this.activeEntity = entities.getFirst();
+            if (!entities.isEmpty()) {
+                this.activeEntity = entities.getFirst();
+            }
             return;
         }
 
@@ -70,6 +72,15 @@ public class LevelEditorScene extends Scene {
                         81,
                         0));
         AssetPool.getOrAddTexture("assets/images/blendImage2.png");
+
+        for (Entity entity : entities) {
+            if (entity.getComponent(SpriteRenderer.class) != null) {
+                SpriteRenderer spr = entity.getComponent(SpriteRenderer.class);
+                if (spr.getTexture() != null) {
+                    spr.withTexture(AssetPool.getOrAddTexture(spr.getTexture().getFilepath()));
+                }
+            }
+        }
     }
 
 //    private int spriteIndex = 0;
@@ -77,9 +88,9 @@ public class LevelEditorScene extends Scene {
 //    private float spriteFlipTimeLeft = 0.0f;
 
 //    float t = 0.0f;
-    float angle = 0.0f;
-    float x = 0.0f;
-    float y = 0.0f;
+//    float angle = 0.0f;
+//    float x = 0.0f;
+//    float y = 0.0f;
     @Override
     public void update(float dt) {
 //        IO.println("FPS: " + (1.0f / dt));
@@ -104,12 +115,12 @@ public class LevelEditorScene extends Scene {
 //        DebugDraw.addLine2D(new Vector2f(600, 400), new Vector2f(x, y), new Vector3f(0, 0, 1));
 
         levelEditorStuff.update(dt);
-        DebugDraw.addCircle2D(new Vector2f(x, y), 64, new Vector3f(0, 1, 0), 1);
-        x += 50f * dt;
-        y += 50f * dt;
+//        DebugDraw.addCircle2D(new Vector2f(x, y), 64, new Vector3f(0, 1, 0), 1);
+//        x += 50f * dt;
+//        y += 50f * dt;
 
 //        DebugDraw.addBox2D(new Vector2f(400, 200), new Vector2f(64, 32), angle, new Vector3f(0, 1, 0), 1);
-        angle += 10.0f * dt;
+//        angle += 10.0f * dt;
 //        float mouseX = MouseListener.getWorldX();
 //        float mouseY = MouseListener.getWorldY();
 //        // Draw a small crosshair at mouse position
