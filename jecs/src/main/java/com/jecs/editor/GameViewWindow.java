@@ -1,11 +1,15 @@
 package com.jecs.editor;
 
+import com.jecs.engine.MouseListener;
 import com.jecs.engine.Window;
 import imgui.ImGui;
 import imgui.ImVec2;
 import imgui.flag.ImGuiWindowFlags;
+import org.joml.Vector2f;
 
 public class GameViewWindow {
+
+    private static float leftX, rightX, topY, bottomY;
 
     public static void imgui() {
         ImGui.begin("Game Viewport", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
@@ -13,9 +17,26 @@ public class GameViewWindow {
         ImVec2 windowSize = getLargestSizeForViewport();
         ImVec2 windowPos = getCenteredPositionForViewport(windowSize);
 
+
         ImGui.setCursorPos(windowPos.x, windowPos.y);
+
+        ImVec2 topLeft = new ImVec2();
+        ImGui.getCursorScreenPos(topLeft);
+        topLeft.x -= ImGui.getScrollX();
+        topLeft.y -= ImGui.getScrollY();
+
+        //TODO: not necessary
+//        leftX = topLeft.x;
+//        bottomY = topLeft.y;
+//        rightX = topLeft.x + windowSize.x;
+//        topY = topLeft.y + windowSize.y;
+
+
         int textureId = Window.getFramebuffer().getTextureId();
         ImGui.image(textureId, windowSize.x, windowSize.y, 0, 1, 1, 0);
+
+        MouseListener.setGameViewportPos(new Vector2f(topLeft.x, topLeft.y));
+        MouseListener.setGameViewportSize(new Vector2f(windowSize.x, windowSize.y));
 
         ImGui.end();
     }
@@ -49,4 +70,9 @@ public class GameViewWindow {
 
         return new ImVec2(aspectWidth, aspectHeight);
     }
+
+    //TODO: CLean this, i don't think it's necessary
+//    public static boolean getWantCaptureMouse() {
+//        return MouseListener.getX() >= leftX && MouseListener.getX() <= rightX && MouseListener.getY() >= bottomY && MouseListener.getY() <= topY;
+//    }
 }
