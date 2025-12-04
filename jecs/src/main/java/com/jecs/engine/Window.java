@@ -68,6 +68,14 @@ public class Window {
         return get().currentScene;
     }
 
+    public static FrameBuffer getFramebuffer() {
+        return get().frameBuffer;
+    }
+
+    public static float getTargetAspectRatio() {
+        return 16.0f / 9.0f;
+    }
+
     public void run() {
         IO.println("Hello LWGJL " + Version.getVersion() + "!");
 
@@ -95,10 +103,11 @@ public class Window {
 
             DebugDraw.beginFrame();
 
+            this.frameBuffer.bind();
+
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT);
 
-//            this.frameBuffer.bind();
 
             //check if we've done a frame
             if (dt >= 0.0f) {
@@ -185,6 +194,7 @@ public class Window {
 
         //TODO: Query for monitor's real size
         this.frameBuffer = new FrameBuffer(1920, 1080);
+        glViewport(0,0, 1920, 1080);
 
         Window.changeScene(0);
     }

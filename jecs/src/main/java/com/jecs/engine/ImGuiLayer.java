@@ -1,5 +1,6 @@
 package com.jecs.engine;
 
+import com.jecs.editor.GameViewWindow;
 import com.jecs.scenes.Scene;
 import imgui.*;
 import imgui.flag.ImGuiCond;
@@ -138,6 +139,7 @@ public class ImGuiLayer {
         setupDockspace();
         currentScene.sceneImgui();
         ImGui.showDemoWindow();
+        GameViewWindow.imgui();
         endFrame();
     }
 
