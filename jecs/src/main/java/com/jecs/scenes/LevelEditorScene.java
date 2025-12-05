@@ -131,6 +131,11 @@ public class LevelEditorScene extends Scene {
             entity.update(dt);
         }
 
+
+    }
+
+    @Override
+    public void render() {
         this.renderer.render();
     }
 

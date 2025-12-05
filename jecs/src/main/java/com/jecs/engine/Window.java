@@ -1,10 +1,10 @@
 package com.jecs.engine;
 
-import com.jecs.renderer.DebugDraw;
-import com.jecs.renderer.FrameBuffer;
+import com.jecs.renderer.*;
 import com.jecs.scenes.LevelEditorScene;
 import com.jecs.scenes.LevelScene;
 import com.jecs.scenes.Scene;
+import com.jecs.util.AssetPool;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -28,6 +28,7 @@ public class Window {
     private static Scene currentScene;
     private ImGuiLayer imGuiLayer;
     private FrameBuffer frameBuffer;
+    private PickingTexture pickingTexture;
 
     private Window() {
         this.width = 1920;
@@ -96,11 +97,34 @@ public class Window {
         float beginTime = (float) glfwGetTime();
         float endTime;
         float dt = -1.0f;
+        Shader defaultShader = AssetPool.getOrAddShader("assets/shaders/default.glsl");
+        Shader pickingShader = AssetPool.getOrAddShader("assets/shaders/pickingShader.glsl");
 
         while (!glfwWindowShouldClose(glfwWindow)) {
             // Poll events
             glfwPollEvents();
 
+            // render pass 1. render to picking texture
+            glDisable(GL_BLEND);
+            pickingTexture.enableWriting();
+
+            glViewport(0, 0, 1920, 1080);
+            glClearColor(0f, 0f, 0f, 0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            Renderer.bindShader(pickingShader);
+            currentScene.render();
+
+            if (MouseListener.mouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+                int x = (int) MouseListener.getScreenX();
+                int y = (int) MouseListener.getScreenY();
+                IO.println(pickingTexture.readPixel(x, y));
+            }
+
+            pickingTexture.disableWriting();
+            glEnable(GL_BLEND);
+
+            // render pass 2. render actual game
             DebugDraw.beginFrame();
 
             this.frameBuffer.bind();
@@ -112,7 +136,9 @@ public class Window {
             //check if we've done a frame
             if (dt >= 0.0f) {
                 DebugDraw.draw();
+                Renderer.bindShader(defaultShader);
                 currentScene.update(dt);
+                currentScene.render();
             }
 
             this.frameBuffer.unbind();
@@ -194,6 +220,7 @@ public class Window {
 
         //TODO: Query for monitor's real size
         this.frameBuffer = new FrameBuffer(1920, 1080);
+        this.pickingTexture = new PickingTexture(1920, 1080);
         glViewport(0,0, 1920, 1080);
 
         Window.changeScene(0);

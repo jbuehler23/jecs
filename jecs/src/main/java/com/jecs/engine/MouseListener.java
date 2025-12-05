@@ -172,4 +172,22 @@ public class MouseListener {
     public static void setGameViewportSize(Vector2f gameViewportSize) {
         get().gameViewportSize.set(gameViewportSize);
     }
+
+    public static float getScreenX() {
+        float currentX = getX() - get().gameViewportPos.x;
+        //converts to 0-1 range first, then convert to -1, 1
+        currentX = (currentX / get().gameViewportSize.x) * 1920.0f;
+
+
+        return currentX;
+    }
+
+    public static float getScreenY() {
+        //Y-Coords are flipped from projection
+        float currentY = getY() - get().gameViewportPos.y;
+        //converts to 0-1 range first, then convert to -1, 1
+        currentY = 1080.0f - ((currentY / get().gameViewportSize.y) * 1080.0f);
+
+        return currentY;
+    }
 }

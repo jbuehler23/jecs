@@ -32,6 +32,7 @@ public abstract class Scene {
     }
 
     public abstract void update(float dt);
+    public abstract void render();
 
     public void init() {
 
@@ -107,8 +108,6 @@ public abstract class Scene {
             }
             maxComponentId++;
             maxEntityId++;
-            IO.println(maxEntityId);
-            IO.println(maxComponentId);
             Entity.init(maxEntityId);
             Component.init(maxComponentId);
             this.loaded = true;
