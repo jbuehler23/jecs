@@ -23,14 +23,19 @@ public class MouseControls extends Component {
     @Override
     public void update(float dt) {
         if (holdingEntity != null) {
-//            holdingEntity.transform.position.x = MouseListener.getWorldX() - (holdingEntity.transform.scale.x / 2);
-//            holdingEntity.transform.position.y = MouseListener.getWorldY() - (holdingEntity.transform.scale.y / 2);
-//            holdingEntity.transform.position.x = MouseListener.getWorldX() - 32;
-//            holdingEntity.transform.position.y = MouseListener.getWorldY() - ;
-            holdingEntity.transform.position.x= MouseListener.getWorldX();
+            holdingEntity.transform.position.x = MouseListener.getWorldX();
             holdingEntity.transform.position.y = MouseListener.getWorldY();
-            holdingEntity.transform.position.x = (int) (holdingEntity.transform.position.x / Settings.GRID_WIDTH) * Settings.GRID_WIDTH;
-            holdingEntity.transform.position.y = (int) (holdingEntity.transform.position.y / Settings.GRID_HEIGHT) * Settings.GRID_HEIGHT;
+            if (holdingEntity.transform.position.x >= 0.0f) {
+                holdingEntity.transform.position.x = (int) (holdingEntity.transform.position.x / Settings.GRID_WIDTH) * Settings.GRID_WIDTH;
+            } else {
+                holdingEntity.transform.position.x = (int) (holdingEntity.transform.position.x / Settings.GRID_WIDTH) * Settings.GRID_WIDTH - Settings.GRID_WIDTH;
+            }
+
+            if (holdingEntity.transform.position.y >= 0.0f) {
+                holdingEntity.transform.position.y = (int) (holdingEntity.transform.position.y / Settings.GRID_HEIGHT) * Settings.GRID_HEIGHT;
+            } else {
+                holdingEntity.transform.position.y = (int) (holdingEntity.transform.position.y / Settings.GRID_HEIGHT) * Settings.GRID_HEIGHT - Settings.GRID_HEIGHT;
+            }
 
             if (MouseListener.mouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
                 place();

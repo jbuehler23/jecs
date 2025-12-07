@@ -1,6 +1,7 @@
 package com.jecs.scenes;
 
 import com.jecs.components.*;
+import com.jecs.editor.EditorCamera;
 import com.jecs.engine.*;
 import com.jecs.renderer.DebugDraw;
 import com.jecs.util.AssetPool;
@@ -23,11 +24,12 @@ public class LevelEditorScene extends Scene {
 
     @Override
     public void init() {
+        this.camera = new Camera(new Vector2f());
         levelEditorStuff.addComponent(new MouseControls());
         levelEditorStuff.addComponent(new GridLines());
+        levelEditorStuff.addComponent(new EditorCamera(this.camera));
 
         loadResources();
-        this.camera = new Camera(new Vector2f());
         sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
 
 
@@ -108,6 +110,7 @@ public class LevelEditorScene extends Scene {
 //        DebugDraw.addLine2D(new Vector2f(600, 400), new Vector2f(x, y), new Vector3f(0, 0, 1));
 
         levelEditorStuff.update(dt);
+        this.camera.adjustProjection();
 //        DebugDraw.addCircle2D(new Vector2f(x, y), 64, new Vector3f(0, 1, 0), 1);
 //        x += 50f * dt;
 //        y += 50f * dt;
