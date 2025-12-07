@@ -115,11 +115,7 @@ public class Window {
             Renderer.bindShader(pickingShader);
             currentScene.render();
 
-            if (MouseListener.mouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
-                int x = (int) MouseListener.getScreenX();
-                int y = (int) MouseListener.getScreenY();
-                IO.println(pickingTexture.readPixel(x, y));
-            }
+
 
             pickingTexture.disableWriting();
             glEnable(GL_BLEND);
@@ -143,7 +139,7 @@ public class Window {
 
             this.frameBuffer.unbind();
 
-            this.imGuiLayer.draw(currentScene);
+            this.imGuiLayer.draw(dt, currentScene);
 
             // swap buffers automatically
             glfwSwapBuffers(glfwWindow);
@@ -214,14 +210,14 @@ public class Window {
         //enable alpha-blending
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        this.imGuiLayer = new ImGuiLayer(glfwWindow);
-        this.imGuiLayer.init();
-
 
         //TODO: Query for monitor's real size
         this.frameBuffer = new FrameBuffer(1920, 1080);
         this.pickingTexture = new PickingTexture(1920, 1080);
         glViewport(0,0, 1920, 1080);
+
+        this.imGuiLayer = new ImGuiLayer(glfwWindow, pickingTexture);
+        this.imGuiLayer.init();
 
         Window.changeScene(0);
     }

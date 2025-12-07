@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public abstract class Scene {
 
@@ -24,7 +25,7 @@ public abstract class Scene {
 
     private boolean isRunning = false;
     final List<Entity> entities = new ArrayList<>();
-    protected Entity activeEntity = null;
+
     protected boolean loaded = false;
 
     public Scene() {
@@ -58,16 +59,6 @@ public abstract class Scene {
 
     public Camera camera() {
         return this.camera;
-    }
-
-    public void sceneImgui(){
-        if (activeEntity != null) {
-            ImGui.begin("Inspector");
-            activeEntity.imgui();
-            ImGui.end();
-        }
-
-        imgui();
     }
 
     public void imgui() {
@@ -128,5 +119,12 @@ public abstract class Scene {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Entity getEntity(int entityId) {
+        Optional<Entity> result = this.entities.stream()
+                .filter(entity -> entity.getUid() == entityId)
+                .findFirst();
+        return result.orElse(null);
     }
 }

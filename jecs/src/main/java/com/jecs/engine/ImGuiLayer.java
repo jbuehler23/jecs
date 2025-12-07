@@ -1,6 +1,8 @@
 package com.jecs.engine;
 
 import com.jecs.editor.GameViewWindow;
+import com.jecs.editor.PropertiesWindow;
+import com.jecs.renderer.PickingTexture;
 import com.jecs.scenes.Scene;
 import imgui.*;
 import imgui.flag.ImGuiCond;
@@ -23,9 +25,13 @@ public class ImGuiLayer {
     private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
     private final String glslVersion = "#version 330 core";
     private final long glfwWindow;
+    private GameViewWindow gameViewWindow;
+    private PropertiesWindow propertiesWindow;
 
-    public ImGuiLayer(long glfwWindow) {
+    public ImGuiLayer(long glfwWindow, PickingTexture pickingTexture) {
         this.glfwWindow = glfwWindow;
+        this.gameViewWindow = new GameViewWindow();
+        this.propertiesWindow = new PropertiesWindow(pickingTexture);
     }
 
     public void init() {
@@ -134,12 +140,14 @@ public class ImGuiLayer {
 
     }
 
-    public void draw(Scene currentScene) {
+    public void draw(float dt, Scene currentScene) {
         startFrame();
         setupDockspace();
-        currentScene.sceneImgui();
+        currentScene.imgui();
         ImGui.showDemoWindow();
-        GameViewWindow.imgui();
+        gameViewWindow.imgui();
+        propertiesWindow.update(dt, currentScene);
+        propertiesWindow.imgui();
         endFrame();
     }
 

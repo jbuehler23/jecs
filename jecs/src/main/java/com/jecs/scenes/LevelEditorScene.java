@@ -29,13 +29,6 @@ public class LevelEditorScene extends Scene {
         loadResources();
         this.camera = new Camera(new Vector2f());
         sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
-//        DebugDraw.addLine2D(new Vector2f(0,0), new Vector2f(800, 800), new Vector3f(1, 0, 0), 6000);
-        if (loaded) {
-            if (!entities.isEmpty()) {
-                this.activeEntity = entities.getFirst();
-            }
-            return;
-        }
 
 
 //        entity1 = new Entity(

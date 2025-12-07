@@ -190,4 +190,13 @@ public class MouseListener {
 
         return currentY;
     }
+
+    public static boolean isMouseInsideViewport() {
+        float x = getX();
+        float y = getY();
+        return x >= get().gameViewportPos.x
+                && x <= get().gameViewportPos.x + get().gameViewportSize.x
+                && y >= get().gameViewportPos.y
+                && y <= get().gameViewportPos.y + get().gameViewportSize.y;
+    }
 }
