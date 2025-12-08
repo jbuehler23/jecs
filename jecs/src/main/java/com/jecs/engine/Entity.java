@@ -13,6 +13,7 @@ public class Entity {
     private final List<Component> components;
     public Transform transform;
     private final int zIndex;
+    private boolean serialize = true;
 
     public Entity(String name, Transform transform, int zIndex) {
         this.name = name;
@@ -88,5 +89,13 @@ public class Entity {
 
     public List<Component> getAllComponents() {
         return this.components;
+    }
+
+    public void setNoSerialize() {
+        this.serialize = false;
+    }
+
+    public boolean shouldSerialize() {
+        return this.serialize;
     }
 }

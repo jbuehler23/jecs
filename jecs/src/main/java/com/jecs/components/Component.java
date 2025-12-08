@@ -2,6 +2,7 @@ package com.jecs.components;
 
 import com.jecs.engine.Entity;
 import imgui.ImGui;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
@@ -57,6 +58,12 @@ public abstract class Component {
                     if (ImGui.checkbox(name + ": ", val)) {
                         f.set(this, !val);
                                             }
+                } else if (type == Vector2f.class) {
+                    Vector2f val = (Vector2f) value;
+                    float[] imVec = {val.x, val.y};
+                    if (ImGui.dragFloat2(name + ": ", imVec)) {
+                        val.set(imVec[0], imVec[1]);
+                    }
                 } else if (type == Vector3f.class) {
                     Vector3f val = (Vector3f) value;
                     float[] imVec = {val.x, val.y, val.z};

@@ -4,6 +4,7 @@ import com.jecs.components.SpriteRenderer;
 import com.jecs.engine.Window;
 import com.jecs.util.AssetPool;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 
@@ -103,6 +104,14 @@ public class RenderBatch implements Comparable<RenderBatch> {
             }
         }
 
+        boolean isRotated = sprite.entity.transform.rotation != 0.0f;
+        Matrix4f transformMatrix = new Matrix4f().identity();
+        if (isRotated) {
+            transformMatrix.translate(sprite.entity.transform.position.x,  sprite.entity.transform.position.y, 0);
+            transformMatrix.rotate((float) Math.toRadians(sprite.entity.transform.rotation), 0, 0, 1);
+            transformMatrix.scale(sprite.entity.transform.scale.x, sprite.entity.transform.scale.y, 1);
+        }
+
         // Add verices with appropriate properties
         // *        *
         // *        *
@@ -117,9 +126,19 @@ public class RenderBatch implements Comparable<RenderBatch> {
             } else if (i == 3) {
                 yAdd = 1.0f;
             }
+
+            Vector4f currentPos = new Vector4f(sprite.entity.transform.position.x + (xAdd * sprite.entity.transform.scale.x),
+                    sprite.entity.transform.position.y + (yAdd * sprite.entity.transform.scale.y),
+                    0,
+                    1);
+
+            if (isRotated) {
+                currentPos = new Vector4f(xAdd, yAdd, 0, 1).mul(transformMatrix);
+            }
+
             // Load position - x,y
-            vertices[offset] = sprite.entity.transform.position.x + (xAdd * sprite.entity.transform.scale.x);
-            vertices[offset + 1] = sprite.entity.transform.position.y + (yAdd * sprite.entity.transform.scale.y);
+            vertices[offset] = currentPos.x;
+            vertices[offset + 1] = currentPos.y;
 
             // Load color - r,g,b,a
             vertices[offset + 2] = color.x;

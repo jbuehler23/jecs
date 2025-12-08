@@ -114,7 +114,13 @@ public abstract class Scene {
                 .create();
         try {
             FileWriter writer = new FileWriter("level.txt");
-            writer.write(gson.toJson(this.entities));
+            List<Entity> entitiesToSerialize = new ArrayList<>();
+            for (Entity entity : this.entities) {
+                if (entity.shouldSerialize()) {
+                    entitiesToSerialize.add(entity);
+                }
+            }
+            writer.write(gson.toJson(entitiesToSerialize));
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();

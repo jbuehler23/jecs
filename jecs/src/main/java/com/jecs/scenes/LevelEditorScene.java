@@ -24,13 +24,19 @@ public class LevelEditorScene extends Scene {
 
     @Override
     public void init() {
+        loadResources();
+        Spritesheet gizmos = AssetPool.getSpritesheet("assets/images/spritesheets/gizmos.png");
+
         this.camera = new Camera(new Vector2f());
         levelEditorStuff.addComponent(new MouseControls());
         levelEditorStuff.addComponent(new GridLines());
         levelEditorStuff.addComponent(new EditorCamera(this.camera));
+        levelEditorStuff.addComponent(new TranslateGizmo(gizmos.getSprite(1), Window.getImGuiLayer().getPropertiesWindow()));
 
-        loadResources();
+        levelEditorStuff.start();
+
         sprites = AssetPool.getSpritesheet("assets/images/spritesheets/decorationsAndBlocks.png");
+
 
 
 //        entity1 = new Entity(
@@ -65,6 +71,12 @@ public class LevelEditorScene extends Scene {
                         16,
                         16,
                         81,
+                        0));
+        AssetPool.addSpritesheet("assets/images/spritesheets/gizmos.png",
+                new Spritesheet(AssetPool.getOrAddTexture("assets/images/spritesheets/gizmos.png"),
+                        24,
+                        48,
+                        3,
                         0));
         AssetPool.getOrAddTexture("assets/images/blendImage2.png");
 
@@ -137,6 +149,10 @@ public class LevelEditorScene extends Scene {
 
     @Override
     public void imgui() {
+        ImGui.begin("Level Editor Stuff");
+        levelEditorStuff.imgui();
+        ImGui.end();
+
         ImGui.begin("Test Window");
 
         ImVec2 windowPos = new ImVec2();

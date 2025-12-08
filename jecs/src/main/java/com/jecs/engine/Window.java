@@ -238,4 +238,8 @@ public class Window {
     public static int getHeight() {
         return get().height;
     }
+
+    public static ImGuiLayer getImGuiLayer() {
+        return get().imGuiLayer;
+    }
 }
