@@ -1,5 +1,6 @@
 package com.jecs.editor;
 
+import com.jecs.components.NonPickable;
 import com.jecs.engine.Entity;
 import com.jecs.engine.MouseListener;
 import com.jecs.renderer.PickingTexture;
@@ -32,7 +33,12 @@ public class PropertiesWindow {
             int x = (int) MouseListener.getScreenX();
             int y = (int) MouseListener.getScreenY();
             int activeEntityId = pickingTexture.readPixel(x, y);
-            activeEntity = currentScene.getEntity(activeEntityId);
+            Entity pickedEntity = currentScene.getEntity(activeEntityId);
+            if (pickedEntity != null && pickedEntity.getComponent(NonPickable.class) == null) {
+                activeEntity = pickedEntity;
+            } else if (pickedEntity == null && !MouseListener.isDragging()) {
+                activeEntity = null;
+            }
             this.debounce = 0.2f;
         }
     }

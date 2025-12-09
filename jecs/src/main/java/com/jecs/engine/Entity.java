@@ -10,7 +10,7 @@ public class Entity {
     private static int ID_COUNTER = 0;
     private int uid = -1;
     private final String name;
-    private final List<Component> components;
+    private List<Component> components;
     public Transform transform;
     private final int zIndex;
     private boolean serialize = true;
@@ -60,8 +60,8 @@ public class Entity {
     }
 
     public void start() {
-        for (Component component : components) {
-            component.start();
+        for (int i = 0; i < components.size(); i++) {
+            components.get(i).start();
         }
     }
 

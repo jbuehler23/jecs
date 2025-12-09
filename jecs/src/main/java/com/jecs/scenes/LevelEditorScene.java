@@ -1,15 +1,15 @@
 package com.jecs.scenes;
 
 import com.jecs.components.*;
+import com.jecs.components.gizmos.GizmoSystem;
+import com.jecs.components.gizmos.ScaleGizmo;
+import com.jecs.components.gizmos.TranslateGizmo;
 import com.jecs.editor.EditorCamera;
 import com.jecs.engine.*;
-import com.jecs.renderer.DebugDraw;
 import com.jecs.util.AssetPool;
 import imgui.ImGui;
 import imgui.ImVec2;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
 
 public class LevelEditorScene extends Scene {
 
@@ -31,7 +31,8 @@ public class LevelEditorScene extends Scene {
         levelEditorStuff.addComponent(new MouseControls());
         levelEditorStuff.addComponent(new GridLines());
         levelEditorStuff.addComponent(new EditorCamera(this.camera));
-        levelEditorStuff.addComponent(new TranslateGizmo(gizmos.getSprite(1), Window.getImGuiLayer().getPropertiesWindow()));
+        levelEditorStuff.addComponent(new GizmoSystem(gizmos));
+
 
         levelEditorStuff.start();
 

@@ -12,7 +12,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(dir \"C:\\Dev\\Workspace\\jecs\" /s /b)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
